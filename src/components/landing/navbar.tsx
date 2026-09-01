@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
@@ -22,10 +22,10 @@ export function Navbar() {
         {/* Left: Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#10B981] font-bold text-white shadow-sm transition-transform group-hover:scale-105">
-            T
+            <ArrowUpRight className="h-5 w-5" />
           </div>
           <span className="text-lg font-bold tracking-tight text-foreground">
-            Trade Copilot
+            TradePilot
           </span>
         </Link>
 
@@ -42,17 +42,17 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Right: Theme Toggle, Sign In & Primary CTA (Desktop) */}
+        {/* Right: Theme Toggle, Log In & Primary CTA (Desktop) */}
         <div className="hidden md:flex items-center gap-5">
           <ThemeToggle />
           <Link
-            href="/signin"
+            href="/login"
             className="text-sm font-semibold text-foreground transition-colors hover:text-muted-foreground"
           >
-            Sign In
+            Log in
           </Link>
           <Link
-            href="/analyze"
+            href="/signup"
             className="rounded-xl bg-[#10B981] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#059669] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#10B981]"
           >
             Start Free Analysis
@@ -94,14 +94,14 @@ export function Navbar() {
             ))}
             <div className="pt-4 border-t border-border flex flex-col gap-3">
               <Link
-                href="/signin"
+                href="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-2 text-base font-semibold text-foreground border border-border rounded-lg"
               >
-                Sign In
+                Log in
               </Link>
               <Link
-                href="/analyze"
+                href="/signup"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-2.5 text-base font-semibold text-white bg-[#10B981] rounded-lg shadow-sm hover:bg-[#059669]"
               >
