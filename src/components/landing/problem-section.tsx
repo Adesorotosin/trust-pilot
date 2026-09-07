@@ -25,7 +25,7 @@ export function ProblemSection() {
   ];
 
   return (
-    <section className="py-20 md:py-28 bg-white dark:bg-[#0B0F19] transition-colors duration-200">
+    <section className="py-20 md:py-28 bg-white dark:bg-[#0B0F19] transition-colors duration-200 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Top Header */}
@@ -41,14 +41,14 @@ export function ProblemSection() {
           </p>
         </div>
 
-        {/* 3-Column Problem Cards */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        {/* Problem Cards: Mobile Snap Carousel -> Desktop 3-Col Grid */}
+        <div className="mt-16 flex md:grid md:grid-cols-3 gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
           {problems.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.title}
-                className="rounded-2xl border border-slate-200/70 bg-[#F8FAFC] dark:bg-[#111726] dark:border-slate-800/80 p-6 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors duration-200 hover:border-slate-300 dark:hover:border-slate-700 text-left flex flex-col justify-between"
+                className="w-[85vw] max-w-[340px] sm:w-[380px] md:w-auto flex-shrink-0 snap-center rounded-2xl border border-slate-200/70 bg-[#F8FAFC] dark:bg-[#111726] dark:border-slate-800/80 p-6 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors duration-200 hover:border-slate-300 dark:hover:border-slate-700 text-left flex flex-col justify-between"
               >
                 <div>
                   {/* Red Soft Badge Icon Container */}

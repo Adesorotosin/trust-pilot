@@ -75,7 +75,7 @@ export function Features() {
   ];
 
   return (
-    <section id="features" className="w-full bg-white dark:bg-[#0B0F19] border-b border-slate-200/50 dark:border-none py-20 md:py-28 transition-colors duration-200">
+    <section id="features" className="w-full bg-white dark:bg-[#0B0F19] border-b border-slate-200/50 dark:border-none py-20 md:py-28 transition-colors duration-200 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Asymmetric Header Split */}
@@ -90,18 +90,18 @@ export function Features() {
             </h2>
           </div>
           <p className="max-w-md text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed text-left font-normal">
-            Unlike generic document AI, Trade Copilot understands Nigeria Customs Form M templates, SONCAP certificates, NAFDAC requirements, and Apapa clearing timelines.
+            Unlike generic document AI, TradePilot understands Nigeria Customs Form M templates, SONCAP certificates, NAFDAC requirements, and Apapa clearing timelines.
           </p>
         </div>
 
-        {/* 3-Column Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-7">
+        {/* Feature Cards: Mobile Snap Carousel -> Desktop 3-Col Grid */}
+        <div className="flex md:grid md:grid-cols-3 gap-6 lg:gap-7 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
           {features.map((item, index) => {
             const Icon = item.icon;
             return (
               <div
                 key={index}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200/70 dark:border-transparent bg-[#F8FAFC] dark:bg-[#0E1320] p-6 sm:p-7 transition-colors duration-200 text-left"
+                className="w-[85vw] max-w-[340px] sm:w-[380px] md:w-auto flex-shrink-0 snap-center rounded-2xl border border-slate-200/70 dark:border-transparent bg-[#F8FAFC] dark:bg-[#0E1320] p-6 sm:p-7 transition-colors duration-200 text-left flex flex-col justify-between"
               >
                 <div>
                   {/* Card Header: Green Bare Icon + Badge Tag */}
