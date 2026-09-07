@@ -1,28 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { Loader2 } from "lucide-react";
+
+// Import your dashboard components
 import NewUserDashboard from "@/components/dashboard/new-user-dashboard";
 import ExistingUserDashboard from "@/components/dashboard/existing-user-dashboard";
 
 export default function DashboardPage() {
-  // Set to true to view existing user layout, or false for new user layout
-  const [hasShipments, setHasShipments] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [hasActivity, setHasActivity] = useState<boolean | null>(null);
+  const router = useRouter();
 
-  return (
-    <div className="relative">
-      {/* Dev Switcher - Toggle between New and Existing User states */}
-      <div className="fixed bottom-5 right-5 z-50 bg-slate-900/90 backdrop-blur-md text-white p-2.5 rounded-xl text-xs shadow-2xl border border-slate-800 flex items-center gap-3">
-        <span className="text-slate-400 font-medium">Switch State:</span>
-        <button
-          onClick={() => setHasShipments(!hasShipments)}
-          className="px-3 py-1.5 bg-[#10B981] hover:bg-[#0D9668] text-white rounded-lg font-bold transition-all shadow-sm"
-        >
-          {hasShipments ? "Existing User (Data)" : "New User (Empty)"}
-        </button>
+  useEffect(() => {
+    async function checkUserStatus() {
+      try {
+        const supabase = createClient();
+
+        
+
+        // 1. Get current logged in user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.push("/login");
+          return;
+        }
+       
+        // 2. Check if user has existing activity in your database (e.g., shipments)
+        // Replace 'shipments' with your actual table name if different (e.g., 'activities', 'declarations')
+        const { count, error: countError } = await supabase
+          .from("shipments")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if (countError) {
+          console.error("Error checking activity count:", countError.message);
+          // Fallback to new user dashboard if table query fails or isn't set up yet
+          setHasActivity(false);
+        } else {
+          setHasActivity((count ?? 0) > 0);
+        }
+      } catch (err) {
+        console.error("Unexpected error in dashboard router:", err);
+        setHasActivity(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    checkUserStatus();
+  }, [router]);
+
+  // Loading state while checking authentication and activity count
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
+          <p className="text-xs text-slate-500 font-medium">Loading your dashboard...</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Render the appropriate view */}
-      {hasShipments ? <ExistingUserDashboard /> : <NewUserDashboard />}
-    </div>
-  );
+  // Render appropriate dashboard component based on user activity state
+  return hasActivity ? <ExistingUserDashboard /> : <NewUserDashboard />;
 }

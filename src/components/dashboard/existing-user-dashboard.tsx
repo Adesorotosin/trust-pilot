@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard,
   Truck,
@@ -15,12 +17,42 @@ import {
   AlertTriangle,
   ChevronRight,
   Filter,
-  ArrowRight,
-  ShieldAlert,
+  LogOut,
 } from "lucide-react";
 
 export default function ExistingUserDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [userName, setUserName] = useState("User");
+  const [userInitials, setUserInitials] = useState("U");
+  const router = useRouter();
+
+  useEffect(() => {
+    async function loadUserData() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+        setUserName(fullName);
+
+        const initials = fullName
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+        setUserInitials(initials || "U");
+      }
+    }
+
+    loadUserData();
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const shipments = [
     {
@@ -77,11 +109,18 @@ export default function ExistingUserDashboard() {
     },
   ];
 
+  const filteredShipments = shipments.filter(
+    (shp) =>
+      shp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shp.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shp.route.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       
       {/* LEFT SIDEBAR */}
-      <aside className="w-64 bg-[#0F172A] dark:bg-[#080C14] text-slate-300 flex flex-col justify-between p-4 border-r border-slate-800">
+      <aside className="w-64 bg-[#0F172A] dark:bg-[#080C14] text-slate-300 flex flex-col justify-between p-4 border-r border-slate-800 shrink-0">
         <div>
           {/* Brand Logo */}
           <div className="flex items-center gap-3 px-3 py-4">
@@ -134,18 +173,27 @@ export default function ExistingUserDashboard() {
         </div>
 
         {/* User Profile Card */}
-        <div className="p-3 bg-slate-800/60 dark:bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-[#10B981]/20 border border-[#10B981]/40 flex items-center justify-center text-xs font-bold text-[#10B981]">
-            C
+        <div className="p-3 bg-slate-800/60 dark:bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center justify-between">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="h-9 w-9 rounded-full bg-[#10B981]/20 border border-[#10B981]/40 flex items-center justify-center text-xs font-bold text-[#10B981] shrink-0">
+              {userInitials}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-white truncate">
+                {userName} 👋
+              </p>
+              <p className="text-[11px] text-slate-400 truncate">
+                Trade Operations
+              </p>
+            </div>
           </div>
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-white truncate">
-              Chinedu 👋
-            </p>
-            <p className="text-[11px] text-slate-400 truncate">
-              Trade Operations Manager
-            </p>
-          </div>
+          <button
+            onClick={handleLogout}
+            title="Log Out"
+            className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </aside>
 
@@ -156,10 +204,10 @@ export default function ExistingUserDashboard() {
         <header className="h-16 border-b border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#0E1320] px-8 flex items-center justify-between sticky top-0 z-10">
           <div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              Good afternoon, Chinedu 👋
+              Welcome back, {userName} 👋
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Here's what's happening with your shipments.
+              Here's what's happening with your active shipments today.
             </p>
           </div>
 
@@ -172,7 +220,7 @@ export default function ExistingUserDashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search shipments..."
-                className="pl-9 pr-4 py-1.5 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:border-[#10B981] transition-all"
+                className="pl-9 pr-4 py-1.5 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#10B981] transition-all"
               />
             </div>
 
@@ -475,7 +523,7 @@ export default function ExistingUserDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                  {shipments.map((row) => (
+                  {filteredShipments.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
                       <td className="py-4 px-4 font-bold text-slate-900 dark:text-white">
                         {row.name}
