@@ -2,39 +2,40 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Check, Shield, ArrowUpRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Shield, ArrowUpRight, Loader2, Check } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
-export default function SignUpPage() {
+export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
-    workEmail: "kwame@mensahimporting.com",
+    email: "",
     companyName: "",
-    password: "••••••••••••",
+    password: "",
+    agreeToTerms: false,
   });
-
-  const supabase = createClient();
 
   const handleGoogleSignIn = async () => {
     try {
       setLoadingGoogle(true);
       setErrorMsg(null);
+      const supabase = createClient();
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback`,
         },
       });
 
       if (error) setErrorMsg(error.message);
     } catch (err) {
-      console.error("Unexpected error during Google sign in:", err);
+      console.error("Unexpected error during Google sign up:", err);
       setErrorMsg("An unexpected error occurred.");
     } finally {
       setLoadingGoogle(false);
@@ -43,7 +44,7 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreedToTerms) {
+    if (!formData.agreeToTerms) {
       setErrorMsg("You must agree to the Terms of Service and Privacy Policy.");
       return;
     }
@@ -52,36 +53,38 @@ export default function SignUpPage() {
       setLoading(true);
       setErrorMsg(null);
 
+      const supabase = createClient();
       const { error } = await supabase.auth.signUp({
-        email: formData.workEmail,
+        email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
             company_name: formData.companyName,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
         setErrorMsg(error.message);
       } else {
-        window.location.href = "/dashboard";
+        if (typeof window !== "undefined") {
+          window.location.href = "/dashboard";
+        }
       }
     } catch (err) {
-      console.error("Unexpected error during sign up:", err);
-      setErrorMsg("An unexpected error occurred during account creation.");
+      console.error("Unexpected error during signup:", err);
+      setErrorMsg("An unexpected error occurred during sign up.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans">
+    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden">
       
-      {/* LEFT SIDE: HIDDEN ON MOBILE, VISIBLE ON LG SCREENS AND ABOVE */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
+      {/* LEFT SIDE: DESKTOP GRAPHIC */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden shrink-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
 
         <div className="relative z-10">
@@ -104,6 +107,7 @@ export default function SignUpPage() {
           </div>
         </div>
 
+        {/* SHIPMENT GRAPHIC DIAGRAM */}
         <div className="relative z-10 my-12 lg:my-0 py-8">
           <div className="relative max-w-md mx-auto">
             <div className="absolute -top-6 left-0 p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-48">
@@ -150,11 +154,10 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: TAKES FULL WIDTH ON MOBILE */}
+      {/* RIGHT SIDE: FORM */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md bg-white dark:bg-[#0E1320] p-6 sm:p-8 lg:p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
           
-          {/* Mobile Logo Brand Badge (Shows only on mobile view) */}
           <div className="flex lg:hidden items-center gap-2 mb-2">
             <div className="h-7 w-7 rounded-lg bg-[#10B981] flex items-center justify-center font-bold text-white shadow-md shadow-[#10B981]/20">
               <ArrowUpRight className="h-4 w-4" />
@@ -186,7 +189,7 @@ export default function SignUpPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Kwame Mensah"
+                placeholder="Oluwatosin Adesoro"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
@@ -198,18 +201,14 @@ export default function SignUpPage() {
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 Work Email
               </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  value={formData.workEmail}
-                  onChange={(e) => setFormData({ ...formData, workEmail: e.target.value })}
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-[#10B981] bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#10B981] transition-all"
-                  required
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center">
-                  <Check className="h-3 w-3 stroke-[3]" />
-                </div>
-              </div>
+              <input
+                type="email"
+                placeholder="name@company.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
+                required
+              />
             </div>
 
             <div>
@@ -218,10 +217,11 @@ export default function SignUpPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Mensah Importing Ltd"
+                placeholder="Mensah Importing Ltd"
                 value={formData.companyName}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
+                required
               />
             </div>
 
@@ -247,28 +247,25 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setAgreedToTerms(!agreedToTerms)}
-                className={`h-4 w-4 rounded flex items-center justify-center transition-colors ${
-                  agreedToTerms
-                    ? "bg-[#10B981] text-white"
-                    : "border border-slate-300 dark:border-slate-700"
-                }`}
-              >
-                {agreedToTerms && <Check className="h-3 w-3 stroke-[3]" />}
-              </button>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={formData.agreeToTerms}
+                onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-[#10B981] focus:ring-[#10B981]"
+                required
+              />
+              <label htmlFor="terms" className="text-xs text-slate-500 dark:text-slate-400">
                 I agree to the{" "}
-                <Link href="#" className="text-[#10B981] hover:underline font-medium">
+                <Link href="/terms" className="text-[#10B981] hover:underline">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="#" className="text-[#10B981] hover:underline font-medium">
+                <Link href="/privacy" className="text-[#10B981] hover:underline">
                   Privacy Policy
                 </Link>
-              </span>
+              </label>
             </div>
 
             <button
