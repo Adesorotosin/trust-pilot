@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "link";
+import Link from "next/link"; // ✅ Fixed
 import { Eye, EyeOff, Shield, ArrowUpRight, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
