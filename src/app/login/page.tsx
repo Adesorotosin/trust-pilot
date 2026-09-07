@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link"; // ✅ Fixed
+import Link from "next/link";
 import { Eye, EyeOff, Shield, ArrowUpRight, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -16,16 +16,17 @@ export default function LoginPage() {
     password: "",
   });
 
-  const supabase = createClient();
-
   const handleGoogleSignIn = async () => {
     try {
       setLoadingGoogle(true);
       setErrorMsg(null);
+      const supabase = createClient();
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback`,
         },
       });
 
@@ -44,6 +45,7 @@ export default function LoginPage() {
       setLoading(true);
       setErrorMsg(null);
 
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -52,7 +54,9 @@ export default function LoginPage() {
       if (error) {
         setErrorMsg(error.message);
       } else {
-        window.location.href = "/dashboard";
+        if (typeof window !== "undefined") {
+          window.location.href = "/dashboard";
+        }
       }
     } catch (err) {
       console.error("Unexpected error during login:", err);
@@ -63,10 +67,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans">
+    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden">
       
-      {/* LEFT SIDE: GRAPHIC VISUAL (HIDDEN ON MOBILE) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
+      {/* LEFT SIDE: DESKTOP GRAPHIC */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden shrink-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
 
         <div className="relative z-10">
@@ -89,6 +93,46 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* SHIPMENT GRAPHIC DIAGRAM */}
+        <div className="relative z-10 my-12 lg:my-0 py-8">
+          <div className="relative max-w-md mx-auto">
+            <div className="absolute -top-6 left-0 p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-48">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin Port</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">DEPARTED</span>
+              </div>
+              <p className="text-xs font-bold text-white mt-1">Ningbo-Zhoushan, CN</p>
+            </div>
+
+            <div className="absolute top-2 right-4 px-3 py-1 rounded-full bg-slate-900 border border-[#10B981]/50 text-[10px] font-bold text-white flex items-center gap-1.5 z-20 shadow-lg">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+              Guangzhou Corridor active
+            </div>
+
+            <div className="mt-16 mb-12 ml-16 p-4 rounded-xl bg-[#0F172A]/95 border border-[#10B981]/30 shadow-2xl relative z-20 w-60">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Transit Analysis</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">ACTIVE</span>
+              </div>
+              <p className="text-xs font-bold text-white mt-1 leading-snug">
+                Route optimized (+4 days saved)
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-52 ml-20">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destination</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">CLEARANCE READY</span>
+              </div>
+              <p className="text-xs font-bold text-white mt-1">Lagos Apapa, NG</p>
+            </div>
+
+            <svg className="absolute inset-0 w-full h-full pointer-events-none -z-0 stroke-slate-700 overflow-visible" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 50 10 Q 150 60 220 70 T 150 160" fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
+            </svg>
+          </div>
+        </div>
+
         <div className="relative z-10 border-t border-slate-800/80 pt-6">
           <p className="text-xs text-slate-400">
             Trusted by 500+ SME importers across Nigeria, Kenya, & Ghana
@@ -96,11 +140,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: FULL WIDTH ON MOBILE */}
+      {/* RIGHT SIDE: FORM */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md bg-white dark:bg-[#0E1320] p-6 sm:p-8 lg:p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
           
-          {/* Mobile Logo Brand Badge */}
           <div className="flex lg:hidden items-center gap-2 mb-2">
             <div className="h-7 w-7 rounded-lg bg-[#10B981] flex items-center justify-center font-bold text-white shadow-md shadow-[#10B981]/20">
               <ArrowUpRight className="h-4 w-4" />
