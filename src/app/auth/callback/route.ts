@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
     const cookieStore = await cookies()
@@ -22,18 +23,20 @@ export async function GET(request: Request) {
                 cookieStore.set(name, value, options)
               )
             } catch {
-              // The `setAll` method was called from a Server Component.
+              // Intentionally ignored when called from Server Components
             }
           },
         },
       }
     )
-    
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
     if (!error) {
-      return NextResponse.redirect(`${origin}/dashboard`)
+      // Return a 303 Redirect to ensure the browser loads the fresh cookie
+      return NextResponse.redirect(`${origin}${next}`, { status: 303 })
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate user`)
+  return NextResponse.redirect(`${origin}/login?error=auth-code-error`)
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Shield, ArrowUpRight, Loader2, Check } from "lucide-react";
+import { Eye, EyeOff, Shield, ArrowUpRight, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function SignupPage() {
@@ -33,19 +33,34 @@ export default function SignupPage() {
         },
       });
 
-      if (error) setErrorMsg(error.message);
-    } catch (err) {
+      if (error) {
+        setErrorMsg(error.message);
+        setLoadingGoogle(false);
+      }
+      // Note: We don't turn off loading on success because the browser redirects to Google
+    } catch (err: unknown) {
       console.error("Unexpected error during Google sign up:", err);
-      setErrorMsg("An unexpected error occurred.");
-    } finally {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setErrorMsg(message);
       setLoadingGoogle(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.agreeToTerms) {
       setErrorMsg("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    const cleanEmail = formData.email.trim().toLowerCase();
+    const cleanPassword = formData.password.trim();
+    const cleanFullName = formData.fullName.trim();
+    const cleanCompanyName = formData.companyName.trim();
+
+    if (cleanPassword.length < 6) {
+      setErrorMsg("Password must be at least 6 characters long.");
       return;
     }
 
@@ -54,28 +69,33 @@ export default function SignupPage() {
       setErrorMsg(null);
 
       const supabase = createClient();
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+
       const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+        email: cleanEmail,
+        password: cleanPassword,
         options: {
+          emailRedirectTo: `${origin}/auth/callback`,
           data: {
-            full_name: formData.fullName,
-            company_name: formData.companyName,
+            full_name: cleanFullName,
+            company_name: cleanCompanyName,
           },
         },
       });
 
       if (error) {
+        console.error("Supabase Auth Error:", error.status, error.message);
         setErrorMsg(error.message);
+        setLoading(false);
       } else {
         if (typeof window !== "undefined") {
           window.location.href = "/dashboard";
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Unexpected error during signup:", err);
-      setErrorMsg("An unexpected error occurred during sign up.");
-    } finally {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during sign up.";
+      setErrorMsg(message);
       setLoading(false);
     }
   };
@@ -177,7 +197,7 @@ export default function SignupPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium">
               {errorMsg}
             </div>
           )}

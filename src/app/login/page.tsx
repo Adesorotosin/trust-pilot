@@ -41,14 +41,19 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Sanitize inputs to avoid mobile keyboard/autofill casing and space issues
+    const cleanEmail = formData.email.trim().toLowerCase();
+    const cleanPassword = formData.password.trim();
+
     try {
       setLoading(true);
       setErrorMsg(null);
 
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+        email: cleanEmail,
+        password: cleanPassword,
       });
 
       if (error) {

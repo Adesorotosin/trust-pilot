@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 
-// Import your dashboard components
 import NewUserDashboard from "@/components/dashboard/new-user-dashboard";
 import ExistingUserDashboard from "@/components/dashboard/existing-user-dashboard";
 
@@ -19,26 +18,33 @@ export default function DashboardPage() {
       try {
         const supabase = createClient();
 
-        
-
-        // 1. Get current logged in user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // 1. Get current logged in user (with fallback session check)
+        let { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          user = sessionData?.session?.user ?? null;
+        }
+
+        if (!user) {
           router.push("/login");
           return;
         }
-       
-        // 2. Check if user has existing activity in your database (e.g., shipments)
-        // Replace 'shipments' with your actual table name if different (e.g., 'activities', 'declarations')
+
+        // 2. Query shipments using verified user.id
         const { count, error: countError } = await supabase
           .from("shipments")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id);
 
         if (countError) {
-          console.error("Error checking activity count:", countError.message);
-          // Fallback to new user dashboard if table query fails or isn't set up yet
+          // Log complete error details to catch RLS or schema issues
+          console.error("Error checking activity count:", {
+            message: countError.message,
+            details: countError.details,
+            hint: countError.hint,
+            code: countError.code,
+          });
           setHasActivity(false);
         } else {
           setHasActivity((count ?? 0) > 0);
@@ -54,7 +60,6 @@ export default function DashboardPage() {
     checkUserStatus();
   }, [router]);
 
-  // Loading state while checking authentication and activity count
   if (loading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19]">
@@ -66,6 +71,5 @@ export default function DashboardPage() {
     );
   }
 
-  // Render appropriate dashboard component based on user activity state
   return hasActivity ? <ExistingUserDashboard /> : <NewUserDashboard />;
 }
