@@ -2,35 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: "How it Works", href: "#how-it-works" },
+    { name: "How it works", href: "#how-it-works" },
     { name: "Features", href: "#features" },
-    { name: "Landed Cost Calculator", href: "#calculator" },
+    { name: "Landed cost", href: "#landed-costs" },
     { name: "FAQ", href: "#faq" },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md shadow-sm transition-colors">
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl transition-colors duration-200">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        
-        {/* Left: Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#10B981] font-bold text-white shadow-sm transition-transform group-hover:scale-105">
-            <ArrowUpRight className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            TradePilot
+        <Link href="/" className="group flex items-center gap-2.5" aria-label="Trade Copilot home">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
+            <ArrowUpRight className="h-5 w-5" strokeWidth={2.5} />
           </span>
+          <span className="text-lg font-bold tracking-tight text-foreground">Trade Copilot</span>
         </Link>
 
-        {/* Center: Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -42,8 +37,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Right: Theme Toggle, Log In & Primary CTA (Desktop) */}
-        <div className="hidden md:flex items-center gap-5">
+        <div className="hidden items-center gap-4 md:flex">
           <ThemeToggle />
           <Link
             href="/login"
@@ -53,61 +47,57 @@ export function Navbar() {
           </Link>
           <Link
             href="/signup"
-            className="rounded-xl bg-[#10B981] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#059669] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#10B981]"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            Start Free Analysis
+            Analyze a shipment
           </Link>
         </div>
 
-        {/* Mobile Right Menu Trigger */}
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-foreground hover:bg-muted focus:outline-none"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="inline-flex items-center justify-center rounded-lg p-2 text-foreground transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
             aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             <span className="sr-only">Toggle menu</span>
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
-            ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
-            )}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-background px-4 pb-6 pt-3 md:hidden">
-          <div className="flex flex-col space-y-4">
+        <div id="mobile-navigation" className="border-t border-border bg-background px-4 pb-6 pt-4 md:hidden">
+          <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-lg px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 {link.name}
               </Link>
             ))}
-            <div className="pt-4 border-t border-border flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2 text-base font-semibold text-foreground border border-border rounded-lg"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 text-base font-semibold text-white bg-[#10B981] rounded-lg shadow-sm hover:bg-[#059669]"
-              >
-                Start Free Analysis
-              </Link>
-            </div>
+          </nav>
+
+          <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full rounded-xl border border-border px-4 py-2.5 text-center text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-md"
+            >
+              Analyze a shipment
+            </Link>
           </div>
         </div>
       )}
