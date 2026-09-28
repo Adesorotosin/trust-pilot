@@ -666,6 +666,7 @@ function TradeAnalysisCard({
   const [saveMessage, setSaveMessage] = useState("");
   const [error, setError] = useState("");
   const [analyzingDocumentId, setAnalyzingDocumentId] = useState("");
+  const [savingExtraction, setSavingExtraction] = useState(false);
   const [extracted, setExtracted] = useState<{
     documentId: string;
     fileName: string;
@@ -803,19 +804,77 @@ function TradeAnalysisCard({
     }
   }
 
-  function applyExtractedValues() {
-    if (!extracted) return;
+  async function applyExtractedValues() {
+    if (!extracted || savingExtraction) return;
 
-    if (extracted.hsCode) {
-      setSaveMessage("HS code extracted for review. Update the shipment record separately before relying on it.");
+    setSavingExtraction(true);
+    setError("");
+    setSaveMessage("");
+
+    try {
+      if (isDevMode(shipment.id)) {
+        if (extracted.freightCost != null) setFreight(String(extracted.freightCost));
+        if (extracted.insuranceCost != null) setInsurance(String(extracted.insuranceCost));
+
+        window.localStorage.setItem(
+          `trade-copilot-dev-document-analysis-${extracted.documentId}`,
+          JSON.stringify({
+            ...extracted,
+            reviewStatus: "reviewed",
+            reviewedAt: new Date().toISOString(),
+          })
+        );
+
+        setSaveMessage("Extracted values applied for review and saved locally.");
+        return;
+      }
+
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { error: saveError } = await supabase
+        .from("document_analysis")
+        .upsert(
+          {
+            document_id: extracted.documentId,
+            shipment_id: shipment.id,
+            user_id: user.id,
+            product_description: extracted.productDescription,
+            quantity: extracted.quantity,
+            unit_price: extracted.unitPrice,
+            currency: extracted.currency,
+            invoice_value: extracted.invoiceValue,
+            freight_cost: extracted.freightCost,
+            insurance_cost: extracted.insuranceCost,
+            hs_code: extracted.hsCode,
+            origin: extracted.origin,
+            destination: extracted.destination,
+            confidence_notes: extracted.confidenceNotes,
+            review_status: "reviewed",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "document_id" }
+        );
+
+      if (saveError) throw saveError;
+
+      if (extracted.freightCost != null) setFreight(String(extracted.freightCost));
+      if (extracted.insuranceCost != null) setInsurance(String(extracted.insuranceCost));
+
+      setSaveMessage("Extracted values saved and applied for review.");
+    } catch (err) {
+      console.error("Save document analysis error:", err);
+      setError(err instanceof Error ? err.message : "Unable to save extracted values.");
+    } finally {
+      setSavingExtraction(false);
     }
-
-    if (extracted.invoiceValue != null && extracted.currency === "USD") {
-      setFreight(extracted.freightCost == null ? freight : String(extracted.freightCost));
-      setInsurance(extracted.insuranceCost == null ? insurance : String(extracted.insuranceCost));
-    }
-
-    setSaveMessage("Extracted values applied for review. Check them before saving.");
   }
 
   async function saveAnalysis() {
@@ -954,7 +1013,7 @@ function TradeAnalysisCard({
         </div>
 
         <p className="mt-4 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-          Uploaded files are currently connected to this shipment, but their contents are not automatically extracted yet. The next AI step will read supported documents and let you review extracted values before they affect the estimate.
+          Supported documents can be analyzed with AI. Extracted values stay as suggestions until you review and explicitly apply them.
         </p>
       </div>
 
@@ -1061,7 +1120,7 @@ function TradeAnalysisCard({
               onClick={applyExtractedValues}
               className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400"
             >
-              Apply for review
+              {savingExtraction ? "Saving..." : "Apply & save review"}
             </button>
           </div>
         </div>
