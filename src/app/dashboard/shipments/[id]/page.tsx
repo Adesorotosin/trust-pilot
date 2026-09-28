@@ -627,7 +627,7 @@ function UploadDocumentModal({
             <select
               value={documentType}
               onChange={(event) => setDocumentType(event.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-white/[0.04]"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-[#101c17] dark:text-white"
             >
               {DOCUMENT_TYPES.map((type) => <option key={type}>{type}</option>)}
             </select>
