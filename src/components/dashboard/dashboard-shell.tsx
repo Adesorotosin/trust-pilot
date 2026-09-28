@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -78,7 +79,7 @@ function displayStatus(status?: string | null) {
   return status?.trim() || "Created";
 }
 
-export default function DashboardShell({ showEmptyState = false }: { showEmptyState?: boolean }) {
+export default function DashboardShell() {
   const isLocalDev = process.env.NODE_ENV === "development";
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
@@ -92,14 +93,21 @@ export default function DashboardShell({ showEmptyState = false }: { showEmptySt
   const [mobileNav, setMobileNav] = useState(false);
   const [showNewShipment, setShowNewShipment] = useState(false);
   const [error, setError] = useState("");
+  const [devMode, setDevMode] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   const loadDashboard = async () => {
     if (isLocalDev && window.location.search.includes("dev=1")) {
+      setDevMode(true);
       setUserName("Test User");
       setUserEmail("dev@local.test");
-      setShipments([]);
+      try {
+        const saved = window.localStorage.getItem("trade-copilot-dev-shipments");
+        setShipments(saved ? JSON.parse(saved) : []);
+      } catch {
+        setShipments([]);
+      }
       setLoading(false);
       return;
     }
@@ -174,6 +182,7 @@ export default function DashboardShell({ showEmptyState = false }: { showEmptySt
   }
 
   const firstName = userName.split(" ")[0];
+  const isEmptyDashboard = shipments.length === 0;
 
   return (
     <div className="min-h-screen bg-[#f6f8f7] text-slate-950 dark:bg-[#07100d] dark:text-white">
@@ -342,7 +351,7 @@ export default function DashboardShell({ showEmptyState = false }: { showEmptySt
               <Stat label="Needs attention" value={reviewCount} detail="Review / hold / documents" />
             </section>
 
-            {showEmptyState ? (
+            {isEmptyDashboard ? (
               <section className="mt-6 grid gap-4 xl:grid-cols-[1.45fr_.75fr]">
                 <div className="relative overflow-hidden rounded-3xl bg-[#0a1511] p-7 text-white sm:p-9">
                   <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-emerald-500/20 blur-3xl" />
@@ -589,7 +598,7 @@ function SideNav({
   href,
   active = false,
 }: {
-  icon: typeof LayoutDashboard;
+  icon: LucideIcon;
   label: string;
   href?: string;
   active?: boolean;
@@ -649,6 +658,26 @@ function CreateShipmentModal({
     setSubmitting(true);
 
     try {
+      if (process.env.NODE_ENV === "development" && window.location.search.includes("dev=1")) {
+        const devShipment = {
+          id: `dev-${Date.now()}`,
+          title: form.title.trim(),
+          origin: form.origin.trim(),
+          destination: form.destination.trim(),
+          value: numericValue,
+          hs_code: form.hsCode.trim() || null,
+          status: "Created",
+          created_at: new Date().toISOString(),
+        };
+        const existing = (() => {
+          try { return JSON.parse(window.localStorage.getItem("trade-copilot-dev-shipments") || "[]"); } catch { return []; }
+        })();
+        const next = [devShipment, ...existing];
+        window.localStorage.setItem("trade-copilot-dev-shipments", JSON.stringify(next));
+        await onSuccess();
+        return;
+      }
+
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
