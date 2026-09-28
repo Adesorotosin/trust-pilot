@@ -655,6 +655,67 @@ function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
   const [freight, setFreight] = useState("");
   const [insurance, setInsurance] = useState("");
   const [otherCosts, setOtherCosts] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadAnalysis() {
+      setLoading(true);
+      setError("");
+      setSaveMessage("");
+
+      if (isDevMode(shipment.id)) {
+        try {
+          const saved = JSON.parse(
+            window.localStorage.getItem(`trade-copilot-dev-analysis-${shipment.id}`) || "null"
+          ) as {
+            dutyRate?: string;
+            taxRate?: string;
+            freight?: string;
+            insurance?: string;
+            otherCosts?: string;
+          } | null;
+
+          if (saved) {
+            setDutyRate(saved.dutyRate || "");
+            setTaxRate(saved.taxRate || "");
+            setFreight(saved.freight || "");
+            setInsurance(saved.insurance || "");
+            setOtherCosts(saved.otherCosts || "");
+          }
+        } catch {
+          setError("We couldn't load the saved analysis.");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      const supabase = createClient();
+      const { data, error: queryError } = await supabase
+        .from("shipment_analysis")
+        .select("duty_rate,tax_rate,freight_cost,insurance_cost,other_cost")
+        .eq("shipment_id", shipment.id)
+        .maybeSingle();
+
+      if (queryError) {
+        console.error("Shipment analysis query error:", queryError);
+        setError("Saved analysis is not available yet. Make sure the analysis migration has been run in Supabase.");
+      } else if (data) {
+        setDutyRate(data.duty_rate == null ? "" : String(data.duty_rate));
+        setTaxRate(data.tax_rate == null ? "" : String(data.tax_rate));
+        setFreight(data.freight_cost == null ? "" : String(data.freight_cost));
+        setInsurance(data.insurance_cost == null ? "" : String(data.insurance_cost));
+        setOtherCosts(data.other_cost == null ? "" : String(data.other_cost));
+      }
+
+      setLoading(false);
+    }
+
+    loadAnalysis();
+  }, [shipment.id]);
 
   const declaredValue = Math.max(0, Number(shipment.value || 0));
   const duty = declaredValue * Math.max(0, Number(dutyRate || 0)) / 100;
@@ -665,7 +726,70 @@ function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
     Math.max(0, Number(insurance || 0)) +
     Math.max(0, Number(otherCosts || 0));
   const landedCost = declaredValue + duty + importTax + logistics;
-  const hasEstimateInputs = dutyRate !== "" || taxRate !== "" || freight !== "" || insurance !== "" || otherCosts !== "";
+  const hasEstimateInputs =
+    dutyRate !== "" ||
+    taxRate !== "" ||
+    freight !== "" ||
+    insurance !== "" ||
+    otherCosts !== "";
+
+  async function saveAnalysis() {
+    setSaving(true);
+    setSaveMessage("");
+    setError("");
+
+    try {
+      if (isDevMode(shipment.id)) {
+        window.localStorage.setItem(
+          `trade-copilot-dev-analysis-${shipment.id}`,
+          JSON.stringify({
+            dutyRate,
+            taxRate,
+            freight,
+            insurance,
+            otherCosts,
+          })
+        );
+        setSaveMessage("Analysis saved");
+        return;
+      }
+
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { error: saveError } = await supabase
+        .from("shipment_analysis")
+        .upsert(
+          {
+            shipment_id: shipment.id,
+            user_id: user.id,
+            duty_rate: dutyRate === "" ? null : Math.max(0, Number(dutyRate)),
+            tax_rate: taxRate === "" ? null : Math.max(0, Number(taxRate)),
+            freight_cost: freight === "" ? null : Math.max(0, Number(freight)),
+            insurance_cost: insurance === "" ? null : Math.max(0, Number(insurance)),
+            other_cost: otherCosts === "" ? null : Math.max(0, Number(otherCosts)),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "shipment_id" }
+        );
+
+      if (saveError) throw saveError;
+
+      setSaveMessage("Analysis saved");
+    } catch (err) {
+      console.error("Save shipment analysis error:", err);
+      setError(err instanceof Error ? err.message : "Unable to save analysis.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="rounded-3xl border border-emerald-500/15 bg-emerald-500/[0.04] p-7">
@@ -683,14 +807,34 @@ function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
         Enter the rates and costs you have. Trade Copilot only calculates from your inputs; it does not assume a customs duty or tax rate.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <AnalysisInput label="Duty rate (%)" value={dutyRate} onChange={setDutyRate} placeholder="e.g. 10" />
-        <AnalysisInput label="Import tax / VAT (%)" value={taxRate} onChange={setTaxRate} placeholder="e.g. 7.5" />
-        <AnalysisInput label="Freight (USD)" value={freight} onChange={setFreight} placeholder="e.g. 1200" />
-        <AnalysisInput label="Insurance (USD)" value={insurance} onChange={setInsurance} placeholder="e.g. 150" />
-        <div className="sm:col-span-2">
-          <AnalysisInput label="Other import costs (USD)" value={otherCosts} onChange={setOtherCosts} placeholder="e.g. 300" />
+      {error && (
+        <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {error}
         </div>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <AnalysisInput label="Duty rate (%)" value={dutyRate} onChange={setDutyRate} placeholder="e.g. 10" disabled={loading || saving} />
+        <AnalysisInput label="Import tax / VAT (%)" value={taxRate} onChange={setTaxRate} placeholder="e.g. 7.5" disabled={loading || saving} />
+        <AnalysisInput label="Freight (USD)" value={freight} onChange={setFreight} placeholder="e.g. 1200" disabled={loading || saving} />
+        <AnalysisInput label="Insurance (USD)" value={insurance} onChange={setInsurance} placeholder="e.g. 150" disabled={loading || saving} />
+        <div className="sm:col-span-2">
+          <AnalysisInput label="Other import costs (USD)" value={otherCosts} onChange={setOtherCosts} placeholder="e.g. 300" disabled={loading || saving} />
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {loading ? "Loading saved analysis..." : saveMessage || "Changes are calculated instantly. Save when ready."}
+        </span>
+        <button
+          type="button"
+          onClick={saveAnalysis}
+          disabled={loading || saving}
+          className="rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-semibold text-[#06100b] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? "Saving..." : "Save analysis"}
+        </button>
       </div>
 
       <div className="mt-6 rounded-2xl border border-emerald-500/10 bg-white/60 p-4 dark:bg-white/[0.03]">
@@ -726,11 +870,13 @@ function AnalysisInput({
   value,
   onChange,
   placeholder,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -743,7 +889,8 @@ function AnalysisInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-[#101c17] dark:text-white"
+        disabled={disabled}
+        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#101c17] dark:text-white"
       />
     </label>
   );
