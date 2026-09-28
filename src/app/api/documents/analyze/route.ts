@@ -18,26 +18,35 @@ type ExtractedData = {
 
 function cleanJson(text: string): ExtractedData {
   const cleaned = text
-    .replace(/^\s*```json\s*/i, "")
-    .replace(/^\s*```\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
+    .replace(/^\s*\`\`\`json\s*/i, "")
+    .replace(/^\s*\`\`\`\s*/i, "")
+    .replace(/\s*\`\`\`\s*$/i, "")
     .trim();
 
   const parsed = JSON.parse(cleaned);
 
   return {
-    product_description: parsed.product_description ?? null,
+    product_description:
+      typeof parsed.product_description === "string"
+        ? parsed.product_description
+        : null,
     quantity: typeof parsed.quantity === "number" ? parsed.quantity : null,
     unit_price: typeof parsed.unit_price === "number" ? parsed.unit_price : null,
-    currency: parsed.currency ?? null,
-    invoice_value: typeof parsed.invoice_value === "number" ? parsed.invoice_value : null,
-    freight_cost: typeof parsed.freight_cost === "number" ? parsed.freight_cost : null,
-    insurance_cost: typeof parsed.insurance_cost === "number" ? parsed.insurance_cost : null,
-    hs_code: parsed.hs_code ?? null,
-    origin: parsed.origin ?? null,
-    destination: parsed.destination ?? null,
+    currency: typeof parsed.currency === "string" ? parsed.currency : null,
+    invoice_value:
+      typeof parsed.invoice_value === "number" ? parsed.invoice_value : null,
+    freight_cost:
+      typeof parsed.freight_cost === "number" ? parsed.freight_cost : null,
+    insurance_cost:
+      typeof parsed.insurance_cost === "number" ? parsed.insurance_cost : null,
+    hs_code: typeof parsed.hs_code === "string" ? parsed.hs_code : null,
+    origin: typeof parsed.origin === "string" ? parsed.origin : null,
+    destination:
+      typeof parsed.destination === "string" ? parsed.destination : null,
     confidence_notes: Array.isArray(parsed.confidence_notes)
-      ? parsed.confidence_notes.filter((item: unknown): item is string => typeof item === "string")
+      ? parsed.confidence_notes.filter(
+          (item: unknown): item is string => typeof item === "string"
+        )
       : [],
   };
 }
@@ -48,12 +57,18 @@ export async function POST(request: Request) {
 
     if (!openAiKey) {
       return NextResponse.json(
-        { error: "AI document analysis is not configured. Add OPENAI_API_KEY to the server environment." },
+        {
+          error:
+            "AI document analysis is not configured. Add OPENAI_API_KEY to the server environment.",
+        },
         { status: 503 }
       );
     }
 
-    const body = (await request.json()) as { shipmentId?: string; documentId?: string };
+    const body = (await request.json()) as {
+      shipmentId?: string;
+      documentId?: string;
+    };
 
     if (!body.shipmentId || !body.documentId) {
       return NextResponse.json(
@@ -62,12 +77,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Local test documents live only in browser localStorage, so there is no
-    // Supabase session or storage object for the server to authenticate.
-    // Keep this bypass strictly development-only and strictly limited to
-    // documents created by the local test uploader.
+    // Local test documents are intentionally kept on the demo path.
+    // Real uploaded documents always use the authenticated Supabase flow below.
     const isLocalTestDocument =
-      process.env.NODE_ENV === "development" && body.documentId.startsWith("dev-doc-");
+      process.env.NODE_ENV === "development" &&
+      body.documentId.startsWith("dev-doc-");
 
     if (isLocalTestDocument) {
       return NextResponse.json({
@@ -89,7 +103,7 @@ export async function POST(request: Request) {
           destination: "Nigeria",
           confidence_notes: [
             "Local development test mode: these values are sample extraction data, not a reading of the uploaded file.",
-            "Upload the document through the production-authenticated flow to analyze its actual contents.",
+            "Use an authenticated shipment with a real uploaded PDF or image to test live AI extraction.",
           ],
         },
       });
@@ -126,7 +140,9 @@ export async function POST(request: Request) {
 
     const { data: document, error: documentError } = await supabase
       .from("documents")
-      .select("id,shipment_id,user_id,document_type,file_name,storage_path,mime_type,file_size")
+      .select(
+        "id,shipment_id,user_id,document_type,file_name,storage_path,mime_type,file_size"
+      )
       .eq("id", body.documentId)
       .eq("shipment_id", body.shipmentId)
       .eq("user_id", user.id)
@@ -137,7 +153,8 @@ export async function POST(request: Request) {
     }
 
     const mimeType = document.mime_type || "application/octet-stream";
-    const supported = mimeType === "application/pdf" || mimeType.startsWith("image/");
+    const supported =
+      mimeType === "application/pdf" || mimeType.startsWith("image/");
 
     if (!supported) {
       return NextResponse.json(
@@ -240,7 +257,12 @@ Numeric fields must be numbers or null. Keep currency as a 3-letter code when cl
     if (!aiResponse.ok) {
       console.error("OpenAI document analysis error:", aiJson);
       return NextResponse.json(
-        { error: "The AI service could not analyze this document right now." },
+        {
+          error:
+            typeof aiJson?.error?.message === "string"
+              ? `AI analysis failed: ${aiJson.error.message}`
+              : "The AI service could not analyze this document right now.",
+        },
         { status: 502 }
       );
     }
