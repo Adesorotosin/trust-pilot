@@ -1,42 +1,61 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const nextParam = requestUrl.searchParams.get("next");
 
-  if (code) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Intentionally ignored when called from Server Components
-            }
-          },
-        },
-      }
-    )
+  // Only allow internal paths.
+  // Prevents redirects such as https://another-site.com
+  const next =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : "/dashboard";
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (!error) {
-      // Return a 303 Redirect to ensure the browser loads the fresh cookie
-      return NextResponse.redirect(`${origin}${next}`, { status: 303 })
-    }
+  if (!code) {
+    return NextResponse.redirect(
+      new URL("/login?error=auth-code-error", requestUrl.origin)
+    );
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth-code-error`)
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Cookies may already be handled by the framework.
+          }
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error("Supabase auth callback error:", error);
+
+    return NextResponse.redirect(
+      new URL("/login?error=auth-code-error", requestUrl.origin)
+    );
+  }
+
+  // Successful Google login → dashboard
+  return NextResponse.redirect(
+    new URL(next, requestUrl.origin),
+    { status: 303 }
+  );
 }

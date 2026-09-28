@@ -1,74 +1,109 @@
 "use client";
 
-import { AlertCircle, TrendingDown, FileX } from "lucide-react";
+import {
+  AlertTriangle,
+  Calculator,
+  FileWarning,
+  ArrowDown,
+} from "lucide-react";
 
 export function ProblemSection() {
   const problems = [
     {
-      icon: AlertCircle,
-      title: "Sudden customs penalties",
+      icon: FileWarning,
+      number: "01",
+      title: "Documents don't always agree",
       description:
-        "Mismatched HS codes or slight weight discrepancies on packing lists trigger costly PAAR queries and heavy demurrage fees at Apapa or Tin Can ports.",
+        "A commercial invoice, packing list, and bill of lading can contain different quantities, descriptions, weights, or values. Finding those differences manually takes time.",
     },
     {
-      icon: TrendingDown,
-      title: "Hidden forex & landed leaks",
+      icon: Calculator,
+      number: "02",
+      title: "The real cost is hard to see",
       description:
-        "Uncalculated port handling fees, custom agency commissions, and variable CBN official exchange rates destroy profit margins without warning.",
+        "Product price is only one part of an import. Duties, freight, port charges, exchange rates, and other costs can change what a shipment actually costs you.",
     },
     {
-      icon: FileX,
-      title: "Unstructured supplier data",
+      icon: AlertTriangle,
+      number: "03",
+      title: "Small issues can become expensive",
       description:
-        "Suppliers in Shenzhen or Istanbul write descriptions that don't match NCS requirements. Manual cross-referencing takes hours and misses discrepancies.",
+        "An overlooked document inconsistency or classification issue can create delays, additional costs, or questions that could have been identified earlier.",
     },
   ];
 
   return (
-    <section className="py-20 md:py-28 bg-white dark:bg-[#0B0F19] transition-colors duration-200 overflow-hidden">
+    <section className="overflow-hidden bg-background py-20 transition-colors duration-300 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Top Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#10B981]">
-            THE REALITY OF NIGERIAN TRADE
+        {/* Section heading */}
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
+            THE PROBLEM
           </p>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl md:text-5xl">
-            Port delays aren't bad luck. They're bad paperwork.
+
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl">
+            Importing gets complicated when the information is scattered.
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-slate-500 dark:text-slate-400 leading-relaxed">
-            Relying on custom agents' guesswork, scattered WhatsApp chats, and spreadsheet formulas leads to expensive surprises at the port.
+
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+            Before you can make a confident shipping decision, you often have
+            to piece together information from invoices, shipping documents,
+            suppliers, agents, spreadsheets, and other sources.
           </p>
         </div>
 
-        {/* Problem Cards: Mobile Snap Carousel -> Desktop 3-Col Grid */}
-        <div className="mt-16 flex md:grid md:grid-cols-3 gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
-          {problems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.title}
-                className="w-[85vw] max-w-[340px] sm:w-[380px] md:w-auto flex-shrink-0 snap-center rounded-2xl border border-slate-200/70 bg-[#F8FAFC] dark:bg-[#111726] dark:border-slate-800/80 p-6 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors duration-200 hover:border-slate-300 dark:hover:border-slate-700 text-left flex flex-col justify-between"
-              >
-                <div>
-                  {/* Red Soft Badge Icon Container */}
-                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400 border border-transparent dark:border-red-900/30">
-                    <Icon className="h-5 w-5 stroke-[2.2]" />
+        {/* Problems */}
+        <div className="relative mt-14 md:mt-16">
+          {/* Connecting line - desktop */}
+          <div
+            aria-hidden="true"
+            className="absolute left-[16.66%] right-[16.66%] top-[3.5rem] hidden border-t border-dashed border-border lg:block"
+          />
+
+          <div className="grid gap-5 md:grid-cols-3 md:gap-6">
+            {problems.map((problem) => {
+              const Icon = problem.icon;
+
+              return (
+                <article
+                  key={problem.number}
+                  className="relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md sm:p-7"
+                >
+                  {/* Number + icon */}
+                  <div className="relative flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/10 bg-red-500/10 text-red-500">
+                      <Icon className="h-5 w-5" />
+                    </div>
+
+                    <span className="text-3xl font-black tracking-tight text-muted-foreground/20">
+                      {problem.number}
+                    </span>
                   </div>
 
-                  {/* Card Title & Copy */}
-                  <h3 className="mt-5 text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                    {item.title}
+                  <h3 className="mt-7 text-xl font-bold tracking-tight text-foreground">
+                    {problem.title}
                   </h3>
-                  <p className="mt-2.5 text-sm text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
-                    {item.description}
+
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {problem.description}
                   </p>
-                </div>
-              </div>
-            );
-          })}
+                </article>
+              );
+            })}
+          </div>
         </div>
 
+        {/* Transition into solution */}
+        <div className="mt-14 flex flex-col items-center text-center md:mt-16">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted/40">
+            <ArrowDown className="h-4 w-4 text-emerald-500" />
+          </div>
+
+          <p className="mt-4 max-w-xl text-sm font-medium leading-6 text-muted-foreground">
+            Trade Copilot brings these pieces together so you can understand
+            what is happening with a shipment before making the next move.
+          </p>
+        </div>
       </div>
     </section>
   );

@@ -1,282 +1,460 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Eye, EyeOff, Shield, ArrowUpRight, Loader2 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useTheme } from "next-themes";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  Moon,
+  ShieldCheck,
+  Sun,
+} from "lucide-react";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const { resolvedTheme, setTheme } = useTheme();
+
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleGoogleSignIn = async () => {
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+
+    const error = searchParams.get("error");
+
+    if (error === "auth-code-error") {
+      setErrorMessage(
+        "We couldn't complete your Google sign-in. Please try again."
+      );
+    }
+  }, [searchParams]);
+
+  const getAuthErrorMessage = (message: string) => {
+    const normalizedMessage = message.toLowerCase();
+
+    if (
+      normalizedMessage.includes("invalid login credentials") ||
+      normalizedMessage.includes("invalid credentials")
+    ) {
+      return "The email or password is incorrect.";
+    }
+
+    if (normalizedMessage.includes("email not confirmed")) {
+      return "Please confirm your email address before signing in.";
+    }
+
+    if (normalizedMessage.includes("too many requests")) {
+      return "Too many attempts. Please wait a moment and try again.";
+    }
+
+    if (normalizedMessage.includes("network")) {
+      return "Network error. Please check your connection and try again.";
+    }
+
+    return "Something went wrong while signing you in. Please try again.";
+  };
+
+  const handleGoogleLogin = async () => {
+    if (googleLoading || loading) return;
+
+    setErrorMessage("");
+    setSuccessMessage("");
+    setGoogleLoading(true);
+
     try {
-      setLoadingGoogle(true);
-      setErrorMsg(null);
-      const supabase = createClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      
+      const origin = window.location.origin;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback?next=/dashboard`,
         },
       });
 
-      if (error) setErrorMsg(error.message);
-    } catch (err) {
-      console.error("Unexpected error during Google sign in:", err);
-      setErrorMsg("An unexpected error occurred.");
-    } finally {
-      setLoadingGoogle(false);
+      if (error) {
+        setErrorMessage(getAuthErrorMessage(error.message));
+        setGoogleLoading(false);
+      }
+    } catch {
+      setErrorMessage(
+        "Unable to connect to Google right now. Please try again."
+      );
+      setGoogleLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    // Sanitize inputs to avoid mobile keyboard/autofill casing and space issues
-    const cleanEmail = formData.email.trim().toLowerCase();
-    const cleanPassword = formData.password.trim();
+    if (loading || googleLoading) return;
+
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      setErrorMessage("Please enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage("Please enter your password.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      setLoading(true);
-      setErrorMsg(null);
-
-      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password: cleanPassword,
+        password,
       });
 
       if (error) {
-        setErrorMsg(error.message);
-      } else {
-        if (typeof window !== "undefined") {
-          window.location.href = "/dashboard";
-        }
+        setErrorMessage(getAuthErrorMessage(error.message));
+        return;
       }
-    } catch (err) {
-      console.error("Unexpected error during login:", err);
-      setErrorMsg("An unexpected error occurred during log in.");
+
+      router.replace("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage(
+        "Something went wrong while signing you in. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden">
-      
-      {/* LEFT SIDE: DESKTOP GRAPHIC */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-[#10B981] flex items-center justify-center font-bold text-white shadow-lg shadow-[#10B981]/20">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-extrabold tracking-tight text-white">
-              TradePilot
-            </span>
+    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* Left visual panel */}
+        <section className="relative hidden overflow-hidden bg-slate-950 lg:flex">
+          <div className="absolute inset-0">
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+            <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/5 blur-3xl" />
           </div>
 
-          <div className="mt-12 lg:mt-20 max-w-lg">
-            <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight">
-              Welcome back to your trade hub.
-            </h1>
-            <p className="mt-4 text-sm text-slate-400 leading-relaxed">
-              Monitor active shipments, review customs declarations, and manage compliance seamlessly.
-            </p>
-          </div>
-        </div>
+          <div className="relative z-10 flex w-full flex-col justify-between p-10 xl:p-14">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-sm font-bold text-slate-950">
+                  TC
+                </div>
 
-        {/* SHIPMENT GRAPHIC DIAGRAM */}
-        <div className="relative z-10 my-12 lg:my-0 py-8">
-          <div className="relative max-w-md mx-auto">
-            <div className="absolute -top-6 left-0 p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-48">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin Port</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">DEPARTED</span>
+                <span className="text-lg font-semibold tracking-tight text-white">
+                  Trade Copilot
+                </span>
               </div>
-              <p className="text-xs font-bold text-white mt-1">Ningbo-Zhoushan, CN</p>
             </div>
 
-            <div className="absolute top-2 right-4 px-3 py-1 rounded-full bg-slate-900 border border-[#10B981]/50 text-[10px] font-bold text-white flex items-center gap-1.5 z-20 shadow-lg">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-              Guangzhou Corridor active
-            </div>
-
-            <div className="mt-16 mb-12 ml-16 p-4 rounded-xl bg-[#0F172A]/95 border border-[#10B981]/30 shadow-2xl relative z-20 w-60">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Transit Analysis</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">ACTIVE</span>
+            <div className="max-w-xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                AI TRADE INTELLIGENCE
               </div>
-              <p className="text-xs font-bold text-white mt-1 leading-snug">
-                Route optimized (+4 days saved)
+
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">
+                Make better trade decisions before you ship.
+              </h1>
+
+              <p className="mt-6 max-w-lg text-base leading-7 text-slate-400">
+                Review trade documents, understand landed costs, and identify
+                potential issues before they become expensive surprises.
               </p>
-            </div>
 
-            <div className="p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-52 ml-20">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destination</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">CLEARANCE READY</span>
+              <div className="mt-10 grid max-w-md gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+                  <LockKeyhole className="mb-3 h-5 w-5 text-emerald-400" />
+
+                  <p className="text-sm font-medium text-white">
+                    Secure workspace
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Keep your trade workflow in one place.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+                  <ShieldCheck className="mb-3 h-5 w-5 text-emerald-400" />
+
+                  <p className="text-sm font-medium text-white">
+                    Decision support
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Surface important information before you act.
+                  </p>
+                </div>
               </div>
-              <p className="text-xs font-bold text-white mt-1">Lagos Apapa, NG</p>
             </div>
 
-            <svg className="absolute inset-0 w-full h-full pointer-events-none -z-0 stroke-slate-700 overflow-visible" xmlns="http://www.w3.org/2000/svg">
-              <path d="M 50 10 Q 150 60 220 70 T 150 160" fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="relative z-10 border-t border-slate-800/80 pt-6">
-          <p className="text-xs text-slate-400">
-            Trusted by 500+ SME importers across Nigeria, Kenya, & Ghana
-          </p>
-        </div>
-      </div>
-
-      {/* RIGHT SIDE: FORM */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md bg-white dark:bg-[#0E1320] p-6 sm:p-8 lg:p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
-          
-          <div className="flex lg:hidden items-center gap-2 mb-2">
-            <div className="h-7 w-7 rounded-lg bg-[#10B981] flex items-center justify-center font-bold text-white shadow-md shadow-[#10B981]/20">
-              <ArrowUpRight className="h-4 w-4" />
-            </div>
-            <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-              TradePilot
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Log in to TradePilot
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-              Enter your credentials to access your dashboard.
+            <p className="text-xs text-slate-600">
+              Trade Copilot · Trade intelligence for modern importers
             </p>
           </div>
+        </section>
 
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
-              {errorMsg}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Work Email
-              </label>
-              <input
-                type="email"
-                placeholder="name@company.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
-                required
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-[11px] text-[#10B981] hover:underline font-medium">
-                  Forgot password?
-                </Link>
+        {/* Login panel */}
+        <section className="relative flex min-h-screen flex-col bg-background transition-colors duration-300">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-6 py-5 sm:px-10">
+            {/* Mobile logo */}
+            <div className="flex items-center gap-2.5 lg:hidden">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-xs font-bold text-background">
+                TC
               </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#10B981] transition-all"
-                  required
-                />
+
+              <span className="font-semibold tracking-tight">
+                Trade Copilot
+              </span>
+            </div>
+
+            <div className="ml-auto">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  mounted
+                    ? `Switch to ${
+                        resolvedTheme === "dark" ? "light" : "dark"
+                      } mode`
+                    : "Toggle theme"
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              >
+                {mounted ? (
+                  resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )
+                ) : (
+                  <span className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Form area */}
+          <div className="flex flex-1 items-center justify-center px-6 pb-12 pt-6 sm:px-10 lg:px-16">
+            <div className="w-full max-w-md">
+              <div className="mb-8">
+                <p className="mb-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  Welcome back
+                </p>
+
+                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Sign in to Trade Copilot
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  Continue to your trade intelligence workspace.
+                </p>
+              </div>
+
+              {/* Error */}
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-600 dark:text-red-400"
+                >
+                  {errorMessage}
+                </div>
+              )}
+
+              {/* Success */}
+              {successMessage && (
+                <div
+                  role="status"
+                  className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm leading-5 text-emerald-600 dark:text-emerald-400"
+                >
+                  {successMessage}
+                </div>
+              )}
+
+              {/* Google */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading || loading}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              >
+                {googleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.42Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 21.5c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.29v2.53A9.75 9.75 0 0 0 12 21.5Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M6.53 13.59A5.86 5.86 0 0 1 6.22 12c0-.55.1-1.09.31-1.59V7.88H3.29A9.74 9.74 0 0 0 2.25 12c0 1.57.38 3.05 1.04 4.12l3.24-2.53Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 6.38c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.47 14.63 2.5 12 2.5a9.75 9.75 0 0 0-8.71 5.38l3.24 2.53C7.3 8.1 9.46 6.38 12 6.38Z"
+                    />
+                  </svg>
+                )}
+
+                {googleLoading ? "Connecting..." : "Continue with Google"}
+              </button>
+
+              {/* Divider */}
+              <div className="my-7 flex items-center gap-4">
+                <div className="h-px flex-1 bg-border" />
+
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  or
+                </span>
+
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              {/* Email form */}
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Email address
+                  </label>
+
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    disabled={loading || googleLoading}
+                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium"
+                    >
+                      Password
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => router.push("/forgot-password")}
+                      className="text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-500 dark:text-emerald-400"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Enter your password"
+                      disabled={loading || googleLoading}
+                      className="h-12 w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-semibold text-background transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Sign up */}
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                Don&apos;t have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  onClick={() => router.push("/signup")}
+                  className="font-semibold text-foreground underline-offset-4 transition-colors hover:text-emerald-600 hover:underline dark:hover:text-emerald-400"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  Create an account
                 </button>
-              </div>
+              </p>
+
+              <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
+                By continuing, you agree to use Trade Copilot responsibly and
+                in accordance with its terms and policies.
+              </p>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-[#10B981] hover:bg-[#0D9668] text-white font-semibold text-xs shadow-md shadow-[#10B981]/20 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log In"}
-            </button>
-          </form>
-
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 dark:border-slate-800 w-full"></div>
-            <span className="bg-white dark:bg-[#0E1320] px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider relative z-10">
-              OR
-            </span>
           </div>
-
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loadingGoogle}
-            className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-          >
-            {loadingGoogle ? (
-              <Loader2 className="h-4 w-4 animate-spin text-[#10B981]" />
-            ) : (
-              <svg className="h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.1 0-5.74-2.09-6.68-4.91H1.36v3.15C3.33 21.32 7.37 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.32 14.29c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.56H1.36C.49 8.29 0 10.09 0 12s.49 3.71 1.36 5.44l3.96-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.33 2.68 1.36 6.56l3.96 3.15c.94-2.82 3.58-4.96 6.68-4.96z"
-                />
-              </svg>
-            )}
-            {loadingGoogle ? "Connecting..." : "Continue with Google"}
-          </button>
-
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-[#10B981] hover:underline font-bold">
-              Sign up
-            </Link>
-          </p>
-
-          <div className="pt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-            <Shield className="h-3.5 w-3.5 text-slate-400" />
-            Bank-grade data encryption and compliance auditing standards
-          </div>
-
-        </div>
+        </section>
       </div>
-
-    </div>
+    </main>
   );
 }

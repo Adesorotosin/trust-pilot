@@ -1,133 +1,150 @@
 "use client";
 
-import { Calculator, FileText, Shield } from "lucide-react";
+import {
+  Calculator,
+  FileCheck2,
+  ShieldAlert,
+  ArrowUpRight,
+} from "lucide-react";
 
 export function Features() {
   const features = [
     {
+      icon: FileCheck2,
+      number: "01",
+      badge: "DOCUMENT INTELLIGENCE",
+      title: "Understand your trade documents",
+      description:
+        "Upload invoices, packing lists, bills of lading, and other shipment documents. Trade Copilot extracts the information that matters and brings it into one place.",
+      points: [
+        "Extract key shipment details",
+        "Compare information across documents",
+        "Surface missing or inconsistent data",
+      ],
+    },
+    {
       icon: Calculator,
-      badge: "PRECISE FOREX",
-      title: "Landed Cost Breakdown",
+      number: "02",
+      badge: "COST VISIBILITY",
+      title: "See the real cost of your shipment",
       description:
-        "Estimates duties, levies, clearing commissions, shipping costs, and surcharge projections at CBN official rates.",
-      widget: (
-        <div className="mt-6 rounded-xl border border-slate-200/60 dark:border-transparent bg-white dark:bg-[#070A11] p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Estimated Duty &amp; Levy
-            </span>
-            <span className="font-mono font-extrabold text-[#10B981]">
-              ₦8,410,200
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Clearing &amp; Port Cost
-            </span>
-            <span className="font-mono font-extrabold text-slate-900 dark:text-slate-200">
-              ₦1,250,000
-            </span>
-          </div>
-        </div>
-      ),
+        "Go beyond the supplier's product price. Build a clearer picture of the costs involved in getting your goods from origin to destination.",
+      points: [
+        "Estimate landed cost components",
+        "Understand duty and shipping impact",
+        "Review the numbers before committing",
+      ],
     },
     {
-      icon: FileText,
-      badge: "NIGERIAN REGULATIONS",
-      title: "PAAR Pre-Assessment",
+      icon: ShieldAlert,
+      number: "03",
+      badge: "RISK SIGNALS",
+      title: "Spot issues before they become problems",
       description:
-        "Auto-classifies items to exact HS codes and cross-checks matching details across SONCAP and Form M schemas.",
-      widget: (
-        <div className="mt-6 rounded-xl border border-slate-200/60 dark:border-transparent bg-white dark:bg-[#070A11] p-4 space-y-2.5">
-          <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <span className="h-2 w-2 rounded-full bg-[#10B981] shrink-0" />
-            <span>HS Code 8504.40.90 is active</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <span className="h-2 w-2 rounded-full bg-[#10B981] shrink-0" />
-            <span>SONCAP certificate linked</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      icon: Shield,
-      badge: "PREVENT PENALTIES",
-      title: "Intelligent Risk Scoring",
-      description:
-        "Rates the safety, weight accuracy, price validity, and potential flags of your shipment on a structured index.",
-      widget: (
-        <div className="mt-6 rounded-xl border border-slate-200/60 dark:border-transparent bg-white dark:bg-[#070A11] p-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Risk Rating
-            </span>
-            <span className="font-mono font-extrabold text-[#10B981] tracking-wider">
-              LOW RISK (96/100)
-            </span>
-          </div>
-          <div className="mt-3 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div className="h-full w-[96%] rounded-full bg-[#10B981]" />
-          </div>
-        </div>
-      ),
+        "Trade Copilot highlights information that may deserve a closer look, helping you identify potential inconsistencies and compliance-related concerns earlier.",
+      points: [
+        "Flag unusual document differences",
+        "Highlight potential risk areas",
+        "Get suggested areas to review",
+      ],
     },
   ];
 
   return (
-    <section id="features" className="w-full bg-white dark:bg-[#0B0F19] border-b border-slate-200/50 dark:border-none py-20 md:py-28 transition-colors duration-200 overflow-hidden">
+    <section
+      id="features"
+      className="overflow-hidden bg-background py-20 transition-colors duration-300 md:py-28"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Asymmetric Header Split */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-12 sm:pb-16">
-          <div className="max-w-2xl text-left">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#10B981]">
-              LOGISTICS COGNITION
+        {/* Header */}
+        <div className="flex flex-col gap-6 border-b border-border pb-10 lg:flex-row lg:items-end lg:justify-between md:pb-14">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
+              FEATURES
             </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl md:text-[2.75rem] md:leading-[1.15]">
-              Built for the nuances of <br className="hidden sm:inline" />
-              African trade
+
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl">
+              The information you need,{" "}
+              <span className="text-emerald-500">in one place.</span>
             </h2>
           </div>
-          <p className="max-w-md text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed text-left font-normal">
-            Unlike generic document AI, TradePilot understands Nigeria Customs Form M templates, SONCAP certificates, NAFDAC requirements, and Apapa clearing timelines.
+
+          <p className="max-w-md text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+            Trade Copilot is designed around the decisions importers actually
+            need to make — not just around extracting text from documents.
           </p>
         </div>
 
-        {/* Feature Cards: Mobile Snap Carousel -> Desktop 3-Col Grid */}
-        <div className="flex md:grid md:grid-cols-3 gap-6 lg:gap-7 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
-          {features.map((item, index) => {
-            const Icon = item.icon;
+        {/* Feature Grid */}
+        <div className="mt-10 grid gap-5 md:grid-cols-3 md:gap-6">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+
             return (
-              <div
-                key={index}
-                className="w-[85vw] max-w-[340px] sm:w-[380px] md:w-auto flex-shrink-0 snap-center rounded-2xl border border-slate-200/70 dark:border-transparent bg-[#F8FAFC] dark:bg-[#0E1320] p-6 sm:p-7 transition-colors duration-200 text-left flex flex-col justify-between"
+              <article
+                key={feature.number}
+                className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-7"
               >
-                <div>
-                  {/* Card Header: Green Bare Icon + Badge Tag */}
-                  <div className="flex items-center justify-between">
-                    <Icon className="h-6 w-6 text-[#10B981] stroke-[2]" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 font-mono">
-                      {item.badge}
-                    </span>
+                {/* Top */}
+                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                    <Icon className="h-5 w-5" />
                   </div>
 
-                  {/* Title & Description */}
-                  <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2.5 text-sm text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
-                    {item.description}
-                  </p>
+                  <span className="text-3xl font-black tracking-tight text-muted-foreground/15">
+                    {feature.number}
+                  </span>
                 </div>
 
-                {/* Inner Bottom Widget Box */}
-                {item.widget}
-              </div>
+                {/* Badge */}
+                <div className="mt-7">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-500">
+                    {feature.badge}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <h3 className="mt-3 text-xl font-bold tracking-tight text-foreground">
+                  {feature.title}
+                </h3>
+
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {feature.description}
+                </p>
+
+                {/* Feature Points */}
+                <div className="mt-7 border-t border-border pt-5">
+                  <ul className="space-y-3">
+                    {feature.points.map((point) => (
+                      <li
+                        key={point}
+                        className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                      >
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Bottom indicator */}
+                <div className="mt-8 flex items-center gap-2 text-xs font-semibold text-muted-foreground transition-colors group-hover:text-emerald-500">
+                  <span>Explore this capability</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </div>
+              </article>
             );
           })}
         </div>
 
+        {/* Bottom statement */}
+        <div className="mt-12 rounded-2xl border border-border bg-muted/30 px-6 py-7 text-center md:mt-16 md:px-10">
+          <p className="mx-auto max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+            The goal isn't to replace your customs agent, freight forwarder,
+            or trade professional. It's to help you arrive at those
+            conversations with better information.
+          </p>
+        </div>
       </div>
     </section>
   );

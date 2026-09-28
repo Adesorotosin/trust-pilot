@@ -1,156 +1,128 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  ArrowRight,
+  ShieldCheck,
+  FileSearch,
+  Sparkles,
+} from "lucide-react";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-12 pb-20 md:pt-16 md:pb-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Top Announcement Badge */}
-<div className="flex justify-center">
-  <div className="inline-flex items-center gap-2.5 rounded-full border border-slate-200/80 bg-[#F8FAFC] px-4 py-1.5 text-xs font-medium text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-    <span className="font-bold text-[#10B981] uppercase tracking-wider text-[11px]">
-      NEW RELEASE
-    </span>
-    <span className="text-slate-600 font-medium">
-      Form M &amp; PAAR Validation Engine v2.0
-    </span>
-  </div>
-</div>
+    <section className="relative overflow-hidden bg-background pt-14 transition-colors duration-300 md:pt-20">
+      {/* Background atmosphere */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute left-1/2 top-0  h-105 w-180 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
 
-        {/* Main Hero Header & Copy */}
-        <div className="mt-6 text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl md:leading-[1.15]">
-            Know your true import cost and compliance risks before shipping
+        <div className="absolute left-[8%] top-[20%] h-32 w-32 rounded-full bg-indigo-500/5 blur-3xl" />
+
+        <div className="absolute right-[8%] top-[35%] h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Announcement */}
+        <div className="flex justify-center">
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+
+            <span className="font-semibold text-emerald-500">
+              AI TRADE INTELLIGENCE
+            </span>
+
+            <span className="hidden sm:inline">
+              Built for modern African importers
+            </span>
+          </div>
+        </div>
+
+        {/* Main Hero Copy */}
+        <div className="mx-auto mt-7 max-w-4xl text-center">
+          <h1 className="text-4xl font-black tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem] lg:leading-[1.05]">
+            Know your true{" "}
+            <span className="text-emerald-500">landed cost</span>{" "}
+            before you ship.
           </h1>
-          <p className="mt-6 text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            For Nigerian SME importers purchasing from China, Turkey, and UAE. Upload your commercial invoices and bills of lading to instantly identify compliance gaps, avoid port delays, and calculate exact landed costs.
+
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+            Trade Copilot helps Nigerian importers understand shipment
+            documents, identify inconsistencies, estimate landed costs, and
+            spot potential compliance issues before they become expensive
+            problems.
           </p>
 
-          {/* Action CTAs */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* CTAs */}
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/analyze"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#10B981] px-6 py-3.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#059669] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#10B981]"
+              href="/signup"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 sm:w-auto"
             >
-              Analyze Free Shipment
+              Analyze a shipment
               <ArrowRight className="h-4 w-4" />
             </Link>
+
             <Link
-              href="#demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
+              href="#how-it-works"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3.5 text-sm font-bold text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:bg-muted sm:w-auto"
             >
-              Watch Interactive Demo
+              See how it works
             </Link>
           </div>
 
-          {/* Trust Micro-Badges */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-xs font-medium text-muted-foreground">
+          {/* Supporting Signals */}
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 text-xs font-medium text-muted-foreground sm:flex-row sm:gap-6">
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-[#10B981]" />
-              <span>100% Confidential Document Processing</span>
+              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              <span>Your documents stay private</span>
             </div>
+
+            <span className="hidden h-1 w-1 rounded-full bg-border sm:block" />
+
             <div className="flex items-center gap-1.5">
-              <Zap className="h-4 w-4 text-[#10B981]" />
-              <span>Results in under 2 minutes</span>
+              <FileSearch className="h-4 w-4 text-emerald-500" />
+              <span>Document-first analysis</span>
+            </div>
+
+            <span className="hidden h-1 w-1 rounded-full bg-border sm:block" />
+
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-emerald-500" />
+              <span>AI-assisted insights</span>
             </div>
           </div>
         </div>
 
-        {/* Hero Product UI Mockup Window */}
-        <div className="mt-12 md:mt-16 mx-auto max-w-5xl">
-          <div className="rounded-2xl border border-slate-800 bg-[#0A0F1D] p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
-            
-            {/* Window Top Controls */}
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-[#FF5F56]" />
-                <span className="h-3 w-3 rounded-full bg-[#FFBD2E]" />
-                <span className="h-3 w-3 rounded-full bg-[#27C93F]" />
-              </div>
-              <span className="font-mono text-[11px] tracking-wider text-slate-400 uppercase">
-                ANALYZING: PL_CN_8802.pdf
-              </span>
-            </div>
+        {/* Hero Dashboard Image */}
+        <div className="mx-auto mt-14 max-w-6xl md:mt-20">
+          <div className="relative">
+            {/* Soft glow behind dashboard */}
+            <div
+              aria-hidden="true"
+              className="absolute -inset-4 rounded-4xl bg-emerald-500/10 blur-3xl"
+            />
 
-            {/* Application Mockup Body */}
-            <div className="space-y-3.5">
-              
-              {/* Alert Card (Quantity Mismatch) */}
-              <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4 text-left backdrop-blur-md">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-red-500/10 p-1.5 text-red-400 mt-0.5">
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-red-200">
-                      Quantity Mismatch Identified
-                    </h4>
-                    <p className="mt-0.5 text-xs text-red-300/80">
-                      Commercial Invoice states 4,200 units, but Bill of Lading shows 3,800 units.
-                    </p>
-                  </div>
-                </div>
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/10">
+              <div className="relative aspect-video w-full">
+                <img
+                  src="/images/trade-copilot-dashboard.png"
+                  alt="Trade Copilot dashboard showing shipment analysis"
+                  className="h-full w-full object-cover object-top"
+                />
               </div>
-
-              {/* Data Row 1: HS Code */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-800/90 bg-[#111827]/70 px-4 py-3.5">
-                <div>
-                  <p className="text-[11px] font-medium text-slate-400">HS Code Detected</p>
-                  <p className="text-sm font-bold font-mono text-slate-100 mt-0.5">8504.40.90</p>
-                </div>
-                <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-                  Verified
-                </span>
-              </div>
-
-              {/* Data Row 2: Total Declared Value */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-800/90 bg-[#111827]/70 px-4 py-3.5">
-                <div>
-                  <p className="text-[11px] font-medium text-slate-400">Total Declared Value</p>
-                  <p className="text-sm font-bold font-mono text-slate-100 mt-0.5">$48,250.00 USD</p>
-                </div>
-                <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-                  Matched
-                </span>
-              </div>
-
-              {/* Data Row 3: Estimated Duty */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-800/90 bg-[#111827]/70 px-4 py-3.5">
-                <div>
-                  <p className="text-[11px] font-medium text-slate-400">Estimated Nigeria Customs Duty (approx.)</p>
-                  <p className="text-sm font-bold font-mono text-slate-100 mt-0.5">₦14,820,500.00</p>
-                </div>
-                <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-                  Calculated
-                </span>
-              </div>
-
-              {/* Data Row 4: Importer of Record */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-800/90 bg-[#111827]/70 px-4 py-3.5">
-                <div>
-                  <p className="text-[11px] font-medium text-slate-400">Importer of Record</p>
-                  <p className="text-sm font-bold font-mono text-slate-100 mt-0.5">Akin &amp; Sons Logistics LTD</p>
-                </div>
-                <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-                  Verified
-                </span>
-              </div>
-
-              {/* Bottom Readiness Confirmation */}
-              <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/20 px-4 py-3 text-left flex items-center gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                <p className="text-xs font-medium text-emerald-300">
-                  Landed cost is within expected variance of ±3%. Form M ready for validation.
-                </p>
-              </div>
-
             </div>
           </div>
         </div>
 
+        {/* Bottom Positioning Statement */}
+        <div className="mx-auto max-w-3xl pb-20 pt-10 text-center md:pb-28">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Built to turn complex trade documents into information you can
+            actually act on.
+          </p>
+        </div>
       </div>
     </section>
   );

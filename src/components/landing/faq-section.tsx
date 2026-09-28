@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
 
 export function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  // rest of your code... // First item open by default
 
   const faqs = [
     {
@@ -60,7 +62,7 @@ export function FAQSection() {
                   <h3 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-white tracking-tight pr-4">
                     {faq.question}
                   </h3>
-                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-slate-700 text-[#0F172A] dark:text-white">
+                  <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-slate-700 text-[#0F172A] dark:text-white">
                     {isOpen ? (
                       <Minus className="w-4 h-4 text-[#10B981] stroke-[2.5]" />
                     ) : (

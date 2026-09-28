@@ -1,202 +1,165 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Star } from "lucide-react";
-import { useInView, useMotionValue, useSpring, motion, AnimatePresence } from "framer-motion";
-
-// Helper component for animated numbers
-function AnimatedNumber({
-  value,
-  prefix = "",
-  suffix = "",
-  decimals = 0,
-}: {
-  value: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const motionValue = useMotionValue(0);
-  const springValue = useSpring(motionValue, {
-    damping: 30,
-    stiffness: 100,
-  });
-
-  useEffect(() => {
-    if (isInView) {
-      motionValue.set(value);
-    }
-  }, [isInView, value, motionValue]);
-
-  useEffect(() => {
-    return springValue.on("change", (latest) => {
-      if (ref.current) {
-        ref.current.textContent = `${prefix}${latest.toLocaleString("en-US", {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        })}${suffix}`;
-      }
-    });
-  }, [springValue, prefix, suffix, decimals]);
-
-  return <span ref={ref}>{prefix}0{suffix}</span>;
-}
+import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Calculator,
+  FileCheck2,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 export function MetricsAndTestimonials() {
-  const testimonials = [
+  const principles = [
     {
-      quote:
-        '"We used to lose thousands of dollars on Apapa port delays due to simple invoice typos. Trade Copilot flags document mistakes in minutes. Absolute game-changer."',
-      author: "Alhaji Musa Kabir",
-      company: "Kano General Electronics LTD",
+      icon: FileCheck2,
+      number: "01",
+      title: "Clarity",
+      description:
+        "Turn scattered shipment documents into information that is easier to understand and review.",
     },
     {
-      quote:
-        '"The Landed Cost calculator is remarkably accurate. Knowing exact customs duty costs in Naira before shipping allows us to price products profitably."',
-      author: "Nneka Obi",
-      company: "Obi Textiles & Spares Lagos",
+      icon: Calculator,
+      number: "02",
+      title: "Cost visibility",
+      description:
+        "Bring the different cost components of an import into one clearer picture before you commit.",
     },
     {
-      quote:
-        '"Clearing containers used to take weeks of back-and-forth document verification. With Trade Copilot, we verify everything pre-arrival seamlessly."',
-      author: "Emeka Okonkwo",
-      company: "Mainland Logistics & Haulage",
-    },
-    {
-      quote:
-        '"The automated HS-code compliance checks saved us from hefty custom query penalties twice this quarter already."',
-      author: "Bisi Adebayo",
-      company: "Lekki Global Maritime Ltd",
+      icon: ShieldCheck,
+      number: "03",
+      title: "Early awareness",
+      description:
+        "Surface inconsistencies and potential areas of concern while there is still time to investigate them.",
     },
   ];
 
-  // Pair up testimonials (2 cards per slide on desktop)
-  const slides = [
-    [testimonials[0], testimonials[1]],
-    [testimonials[2], testimonials[3]],
-  ];
+  const [activeCard, setActiveCard] = useState(0);
 
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Auto-play interval timer (5 seconds)
   useEffect(() => {
-    if (isPaused) return;
-
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+      setActiveCard((prev) => (prev + 1) % principles.length);
+    }, 4500);
 
     return () => clearInterval(timer);
-  }, [isPaused, slides.length]);
+  }, [principles.length]);
 
   return (
-    <section className="w-full bg-white dark:bg-[#0B0F19] py-20 md:py-28 transition-colors duration-200">
+    <section className="w-full bg-muted/30 py-20 transition-colors duration-300 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Animated Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center pb-16 sm:pb-20">
-          
-          {/* $4.8M */}
-          <div className="flex flex-col items-center">
-            <span className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#10B981] font-mono">
-              <AnimatedNumber value={4.8} prefix="$" suffix="M" decimals={1} />
-            </span>
-            <span className="mt-3 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400">
-              Demurrage Costs Saved
-            </span>
-          </div>
+        {/* Section heading */}
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
+            BUILT FOR BETTER DECISIONS
+          </p>
 
-          {/* 18,200+ */}
-          <div className="flex flex-col items-center">
-            <span className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#10B981] font-mono">
-              <AnimatedNumber value={18200} suffix="+" />
-            </span>
-            <span className="mt-3 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400">
-              Documents Analyzed
-            </span>
-          </div>
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl">
+            More visibility before you{" "}
+            <span className="text-emerald-500">make the move.</span>
+          </h2>
 
-          {/* 99.2% */}
-          <div className="flex flex-col items-center">
-            <span className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#10B981] font-mono">
-              <AnimatedNumber value={99.2} suffix="%" decimals={1} />
-            </span>
-            <span className="mt-3 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400">
-              Compliance Accuracy
-            </span>
-          </div>
-
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+            Trade Copilot is designed to help importers understand the
+            information behind a shipment before committing time, money, or
+            inventory.
+          </p>
         </div>
 
-        {/* Testimonial Slider Container */}
-        <div
-          className="relative min-h-[280px]"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSlide}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.35, ease: "easeInOut" }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
-            >
-              {slides[activeSlide].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col justify-between rounded-[24px] bg-[#F8FAFC] dark:bg-[#0E1320] p-8 sm:p-10 border border-[#E2E8F0] dark:border-slate-800/80 text-left transition-colors duration-200"
+        {/* Main feature panel */}
+        <div className="mt-14 grid gap-6 lg:grid-cols-12 md:mt-16">
+          {/* Left statement */}
+          <div className="relative overflow-hidden rounded-3xl bg-emerald-500 p-7 text-white shadow-xl shadow-emerald-500/10 sm:p-9 lg:col-span-5 lg:p-10">
+            <div
+              aria-hidden="true"
+              className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"
+            />
+
+            <div className="relative flex h-full flex-col justify-between">
+              <div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+
+                <p className="mt-8 text-xs font-bold uppercase tracking-[0.18em] text-white/70">
+                  TRADE COPILOT
+                </p>
+
+                <h3 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+                  Know what deserves your attention.
+                </h3>
+
+                <p className="mt-4 text-sm leading-7 text-white/80 sm:text-base">
+                  Good trade decisions start with good information. Trade
+                  Copilot helps organize the details so you can review a
+                  shipment with more context.
+                </p>
+              </div>
+
+              <div className="mt-10 flex items-center gap-2 text-sm font-bold">
+                <span>Understand. Review. Decide.</span>
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* Principles */}
+          <div className="grid gap-4 lg:col-span-7">
+            {principles.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = activeCard === index;
+
+              return (
+                <motion.div
+                  key={item.number}
+                  onMouseEnter={() => setActiveCard(index)}
+                  whileHover={{ x: 4 }}
+                  transition={{ duration: 0.2 }}
+                  className={`group flex gap-5 rounded-2xl border p-5 transition-all duration-300 sm:p-6 ${
+                    isActive
+                      ? "border-emerald-500/30 bg-background shadow-sm"
+                      : "border-border bg-background/60"
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[#10B981]">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="h-4 w-4 fill-transparent stroke-[2.2]"
-                        />
-                      ))}
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                      isActive
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black tracking-[0.15em] text-muted-foreground/50">
+                        {item.number}
+                      </span>
+
+                      <h3 className="text-base font-bold text-foreground sm:text-lg">
+                        {item.title}
+                      </h3>
                     </div>
 
-                    <p className="mt-6 text-sm sm:text-base text-slate-800 dark:text-slate-200 font-normal leading-relaxed">
-                      {item.quote}
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {item.description}
                     </p>
                   </div>
-
-                  <div className="mt-8">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      {item.author}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                      {item.company}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Slider Indicators at Bottom */}
-          <div className="mt-10 flex items-center justify-center gap-2.5">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-                className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  activeSlide === index
-                    ? "w-8 bg-[#10B981]"
-                    : "w-2.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
-                }`}
-              />
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
+        {/* Bottom statement */}
+        <div className="mx-auto mt-14 max-w-3xl text-center md:mt-16">
+          <p className="text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+            Trade Copilot is an information and decision-support tool. It
+            doesn't replace customs authorities, licensed professionals,
+            freight forwarders, or your own judgment.
+          </p>
+        </div>
       </div>
     </section>
   );
