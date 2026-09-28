@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useTheme } from "next-themes";
@@ -15,11 +15,10 @@ import {
   Sun,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
-
   const { resolvedTheme, setTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
@@ -187,7 +186,7 @@ export default function LoginPage() {
               </p>
 
               <div className="mt-10 grid max-w-md gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <LockKeyhole className="mb-3 h-5 w-5 text-emerald-400" />
 
                   <p className="text-sm font-medium text-white">
@@ -199,7 +198,7 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <ShieldCheck className="mb-3 h-5 w-5 text-emerald-400" />
 
                   <p className="text-sm font-medium text-white">
@@ -223,7 +222,6 @@ export default function LoginPage() {
         <section className="relative flex min-h-screen flex-col bg-background transition-colors duration-300">
           {/* Top bar */}
           <div className="flex items-center justify-between px-6 py-5 sm:px-10">
-            {/* Mobile logo */}
             <div className="flex items-center gap-2.5 lg:hidden">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-xs font-bold text-background">
                 TC
@@ -277,7 +275,6 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Error */}
               {errorMessage && (
                 <div
                   role="alert"
@@ -287,7 +284,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Success */}
               {successMessage && (
                 <div
                   role="status"
@@ -297,7 +293,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Google */}
               <button
                 type="button"
                 onClick={handleGoogleLogin}
@@ -334,7 +329,6 @@ export default function LoginPage() {
                 {googleLoading ? "Connecting..." : "Continue with Google"}
               </button>
 
-              {/* Divider */}
               <div className="my-7 flex items-center gap-4">
                 <div className="h-px flex-1 bg-border" />
 
@@ -345,7 +339,6 @@ export default function LoginPage() {
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              {/* Email form */}
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
                   <label
@@ -435,7 +428,6 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              {/* Sign up */}
               <p className="mt-8 text-center text-sm text-muted-foreground">
                 Don&apos;t have an account?{" "}
                 <button
@@ -456,5 +448,21 @@ export default function LoginPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function LoginLoading() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
+      <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+    </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 }
