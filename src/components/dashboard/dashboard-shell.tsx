@@ -404,7 +404,11 @@ export default function DashboardShell() {
                     {filteredShipments.slice(0, 3).map((shipment) => (
                       <button
                         key={shipment.id}
-                        onClick={() => router.push(`/dashboard/shipments/${shipment.id}`)}
+                        onClick={() => router.push(
+                          isLocalDev && window.location.search.includes("dev=1")
+                            ? `/dashboard/shipments/${shipment.id}?dev=1`
+                            : `/dashboard/shipments/${shipment.id}`
+                        )}
                         className="flex w-full items-center gap-4 rounded-2xl bg-slate-50 p-4 text-left transition hover:bg-slate-100 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
                       >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm dark:bg-white/10 dark:text-slate-300">
