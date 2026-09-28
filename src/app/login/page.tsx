@@ -60,8 +60,17 @@ function LoginContent() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    // Confirm the session exists before leaving the login page.
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      setError("Your login was successful, but the session could not be established. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    // Use a full navigation so the dashboard starts with the fresh Supabase session.
+    window.location.assign("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
