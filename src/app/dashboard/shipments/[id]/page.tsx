@@ -665,6 +665,23 @@ function TradeAnalysisCard({
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [error, setError] = useState("");
+  const [analyzingDocumentId, setAnalyzingDocumentId] = useState("");
+  const [extracted, setExtracted] = useState<{
+    documentId: string;
+    fileName: string;
+    documentType: string;
+    productDescription: string | null;
+    quantity: number | null;
+    unitPrice: number | null;
+    currency: string | null;
+    invoiceValue: number | null;
+    freightCost: number | null;
+    insuranceCost: number | null;
+    hsCode: string | null;
+    origin: string | null;
+    destination: string | null;
+    confidenceNotes: string[];
+  } | null>(null);
 
   useEffect(() => {
     async function loadAnalysis() {
@@ -738,6 +755,68 @@ function TradeAnalysisCard({
     freight !== "" ||
     insurance !== "" ||
     otherCosts !== "";
+
+  async function analyzeDocument(document: DocumentRecord) {
+    setAnalyzingDocumentId(document.id);
+    setError("");
+    setSaveMessage("");
+    setExtracted(null);
+
+    try {
+      const response = await fetch("/api/documents/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shipmentId: shipment.id,
+          documentId: document.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to analyze document.");
+      }
+
+      const data = result.extracted;
+      setExtracted({
+        documentId: result.document.id,
+        fileName: result.document.file_name,
+        documentType: result.document.document_type,
+        productDescription: data.product_description ?? null,
+        quantity: data.quantity ?? null,
+        unitPrice: data.unit_price ?? null,
+        currency: data.currency ?? null,
+        invoiceValue: data.invoice_value ?? null,
+        freightCost: data.freight_cost ?? null,
+        insuranceCost: data.insurance_cost ?? null,
+        hsCode: data.hs_code ?? null,
+        origin: data.origin ?? null,
+        destination: data.destination ?? null,
+        confidenceNotes: Array.isArray(data.confidence_notes) ? data.confidence_notes : [],
+      });
+    } catch (err) {
+      console.error("Analyze document error:", err);
+      setError(err instanceof Error ? err.message : "Unable to analyze document.");
+    } finally {
+      setAnalyzingDocumentId("");
+    }
+  }
+
+  function applyExtractedValues() {
+    if (!extracted) return;
+
+    if (extracted.hsCode) {
+      setSaveMessage("HS code extracted for review. Update the shipment record separately before relying on it.");
+    }
+
+    if (extracted.invoiceValue != null && extracted.currency === "USD") {
+      setFreight(extracted.freightCost == null ? freight : String(extracted.freightCost));
+      setInsurance(extracted.insuranceCost == null ? insurance : String(extracted.insuranceCost));
+    }
+
+    setSaveMessage("Extracted values applied for review. Check them before saving.");
+  }
 
   async function saveAnalysis() {
     setSaving(true);
@@ -879,6 +958,115 @@ function TradeAnalysisCard({
         </p>
       </div>
 
+      {documents.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-white/10 dark:bg-white/[0.02]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Document analysis
+              </p>
+              <p className="mt-1 text-sm font-semibold">Review extracted shipment data</p>
+            </div>
+            <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {documents.map((document) => {
+              const supported =
+                document.mime_type === "application/pdf" ||
+                Boolean(document.mime_type?.startsWith("image/"));
+
+              return (
+                <div
+                  key={document.id}
+                  className="flex flex-col gap-3 rounded-xl bg-slate-50 p-3 sm:flex-row sm:items-center dark:bg-white/[0.03]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold">{document.file_name}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">
+                      {document.document_type} · {supported ? "AI-ready" : "PDF/image required"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!supported || Boolean(analyzingDocumentId)}
+                    onClick={() => analyzeDocument(document)}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-[11px] font-semibold text-[#06100b] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {analyzingDocumentId === document.id ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Analyze
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {extracted && (
+        <div className="mt-4 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                Extraction result
+              </p>
+              <p className="mt-1 text-sm font-semibold">{extracted.fileName}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExtracted(null)}
+              className="rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <ExtractionRow label="Product" value={extracted.productDescription} />
+            <ExtractionRow label="Invoice value" value={extracted.invoiceValue != null ? `${extracted.currency || ""} ${extracted.invoiceValue}`.trim() : null} />
+            <ExtractionRow label="Quantity" value={extracted.quantity != null ? String(extracted.quantity) : null} />
+            <ExtractionRow label="Unit price" value={extracted.unitPrice != null ? `${extracted.currency || ""} ${extracted.unitPrice}`.trim() : null} />
+            <ExtractionRow label="Freight" value={extracted.freightCost != null ? `${extracted.currency || ""} ${extracted.freightCost}`.trim() : null} />
+            <ExtractionRow label="Insurance" value={extracted.insuranceCost != null ? `${extracted.currency || ""} ${extracted.insuranceCost}`.trim() : null} />
+            <ExtractionRow label="HS code" value={extracted.hsCode} />
+            <ExtractionRow label="Origin" value={extracted.origin} />
+          </div>
+
+          {extracted.confidenceNotes.length > 0 && (
+            <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-[11px] leading-5 text-amber-700 dark:text-amber-400">
+              <p className="font-semibold">Review notes</p>
+              <ul className="mt-1 list-disc pl-4">
+                {extracted.confidenceNotes.map((note, index) => (
+                  <li key={index}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+              AI suggestions are not automatically trusted or saved. Review the extracted values first.
+            </p>
+            <button
+              type="button"
+              onClick={applyExtractedValues}
+              className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400"
+            >
+              Apply for review
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <AnalysisInput label="Duty rate (%)" value={dutyRate} onChange={setDutyRate} placeholder="e.g. 10" disabled={loading || saving} />
         <AnalysisInput label="Import tax / VAT (%)" value={taxRate} onChange={setTaxRate} placeholder="e.g. 7.5" disabled={loading || saving} />
@@ -986,6 +1174,15 @@ function DocumentSourceRow({
       >
         {ready ? "Available" : "Missing"}
       </span>
+    </div>
+  );
+}
+
+function ExtractionRow({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-white/[0.03]">
+      <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1 text-xs font-medium">{value || "Not found"}</p>
     </div>
   );
 }
