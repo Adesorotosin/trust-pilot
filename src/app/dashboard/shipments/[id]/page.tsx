@@ -326,20 +326,7 @@ export default function ShipmentDetailsPage() {
             onChanged={loadDocuments}
           />
 
-          <div className="rounded-3xl border border-emerald-500/15 bg-emerald-500/[0.04] p-7">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">Analysis</p>
-            <h2 className="mt-2 text-lg font-semibold">Trade analysis comes after the inputs.</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Once shipment and document data are available, this area will calculate useful trade context from the information you provide.
-            </p>
-            <div className="mt-6 rounded-2xl border border-emerald-500/10 bg-white/50 p-4 dark:bg-white/[0.03]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Next</p>
-              <p className="mt-2 text-sm font-medium">Declared value → duties & taxes → logistics → landed cost</p>
-            </div>
-          </div>
+          <TradeAnalysisCard shipment={shipment} />
         </section>
       </main>
 
@@ -658,6 +645,115 @@ function UploadDocumentModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
+  const [dutyRate, setDutyRate] = useState("");
+  const [taxRate, setTaxRate] = useState("");
+  const [freight, setFreight] = useState("");
+  const [insurance, setInsurance] = useState("");
+  const [otherCosts, setOtherCosts] = useState("");
+
+  const declaredValue = Math.max(0, Number(shipment.value || 0));
+  const duty = declaredValue * Math.max(0, Number(dutyRate || 0)) / 100;
+  const taxBase = declaredValue + duty;
+  const importTax = taxBase * Math.max(0, Number(taxRate || 0)) / 100;
+  const logistics =
+    Math.max(0, Number(freight || 0)) +
+    Math.max(0, Number(insurance || 0)) +
+    Math.max(0, Number(otherCosts || 0));
+  const landedCost = declaredValue + duty + importTax + logistics;
+  const hasEstimateInputs = dutyRate !== "" || taxRate !== "" || freight !== "" || insurance !== "" || otherCosts !== "";
+
+  return (
+    <div className="rounded-3xl border border-emerald-500/15 bg-emerald-500/[0.04] p-7">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">Trade analysis</p>
+          <h2 className="mt-1 text-lg font-semibold">Estimate your landed cost</h2>
+        </div>
+      </div>
+
+      <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        Enter the rates and costs you have. Trade Copilot only calculates from your inputs; it does not assume a customs duty or tax rate.
+      </p>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <AnalysisInput label="Duty rate (%)" value={dutyRate} onChange={setDutyRate} placeholder="e.g. 10" />
+        <AnalysisInput label="Import tax / VAT (%)" value={taxRate} onChange={setTaxRate} placeholder="e.g. 7.5" />
+        <AnalysisInput label="Freight (USD)" value={freight} onChange={setFreight} placeholder="e.g. 1200" />
+        <AnalysisInput label="Insurance (USD)" value={insurance} onChange={setInsurance} placeholder="e.g. 150" />
+        <div className="sm:col-span-2">
+          <AnalysisInput label="Other import costs (USD)" value={otherCosts} onChange={setOtherCosts} placeholder="e.g. 300" />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-emerald-500/10 bg-white/60 p-4 dark:bg-white/[0.03]">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Estimated landed cost</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight">{formatCurrency(landedCost)}</p>
+          </div>
+          <div className="rounded-xl bg-emerald-500/10 px-3 py-2 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Inputs</p>
+            <p className="mt-0.5 text-xs font-medium">{hasEstimateInputs ? "Using your data" : "Waiting for rates"}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-2 border-t border-slate-200/70 pt-4 text-xs dark:border-white/10">
+          <AnalysisRow label="Declared value" value={formatCurrency(declaredValue)} />
+          <AnalysisRow label="Estimated duty" value={formatCurrency(duty)} />
+          <AnalysisRow label="Estimated import tax" value={formatCurrency(importTax)} />
+          <AnalysisRow label="Logistics & other costs" value={formatCurrency(logistics)} />
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white/60 p-4 text-xs leading-5 text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-400">
+        <span className="font-semibold text-slate-700 dark:text-slate-200">Planning estimate:</span>{" "}
+        the tax base shown here is a simple estimate using declared value + estimated duty. Actual customs valuation, taxes, fees, and exemptions vary by jurisdiction and shipment.
+      </div>
+    </div>
+  );
+}
+
+function AnalysisInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-medium text-slate-600 dark:text-slate-300">{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-[#101c17] dark:text-white"
+      />
+    </label>
+  );
+}
+
+function AnalysisRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }
