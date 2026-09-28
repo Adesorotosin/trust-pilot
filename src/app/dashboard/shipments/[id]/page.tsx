@@ -62,11 +62,12 @@ function statusTone(status?: string | null) {
   return "bg-sky-500/10 text-sky-700 dark:text-sky-400";
 }
 
-function isDevMode() {
+function isDevMode(shipmentId?: string) {
   return (
     typeof window !== "undefined" &&
     process.env.NODE_ENV === "development" &&
-    window.location.search.includes("dev=1")
+    (window.location.search.includes("dev=1") ||
+      String(shipmentId || "").startsWith("dev-"))
   );
 }
 
@@ -88,7 +89,7 @@ export default function ShipmentDetailsPage() {
       setError("");
       setNotFound(false);
 
-      if (isDevMode()) {
+      if (isDevMode(shipmentId)) {
         try {
           const saved = JSON.parse(
             window.localStorage.getItem("trade-copilot-dev-shipments") || "[]"
@@ -166,7 +167,7 @@ export default function ShipmentDetailsPage() {
             This shipment may have been removed or is no longer available.
           </p>
           <Link
-            href={isDevMode() ? "/dashboard?dev=1" : "/dashboard"}
+            href={isDevMode(shipmentId) ? "/dashboard?dev=1" : "/dashboard"}
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-[#06100b]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -182,7 +183,7 @@ export default function ShipmentDetailsPage() {
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-white/8 dark:bg-[#0a1511]/90">
         <div className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between px-5 sm:px-7 lg:px-10">
           <Link
-            href={isDevMode() ? "/dashboard?dev=1" : "/dashboard"}
+            href={isDevMode(shipmentId) ? "/dashboard?dev=1" : "/dashboard"}
             className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
