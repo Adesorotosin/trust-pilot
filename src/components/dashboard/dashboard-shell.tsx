@@ -22,6 +22,7 @@ import {
   Sun,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 
 type Shipment = {
@@ -532,7 +533,7 @@ function NavItem({
   href,
   active = false,
 }: {
-  icon: typeof LayoutDashboard;
+  icon: LucideIcon;
   label: string;
   href?: string;
   active?: boolean;
@@ -652,7 +653,7 @@ function CreateShipmentModal({
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g. Industrial machinery"
-              className="input"
+              className="h-10 w-full rounded-lg border border-border bg-muted/40 px-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
             />
           </Field>
 
