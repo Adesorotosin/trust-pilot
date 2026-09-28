@@ -3,5 +3,5 @@
 import DashboardShell from "./dashboard-shell";
 
 export default function NewUserDashboard() {
-  return <DashboardShell showEmptyState />;
+  return <DashboardShell />;
 }
