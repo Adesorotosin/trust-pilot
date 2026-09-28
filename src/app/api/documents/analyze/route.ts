@@ -53,7 +53,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as { shipmentId?: string; documentId?: string };
+    const body = (await request.json()) as {
+      shipmentId?: string;
+      documentId?: string;
+      devMode?: boolean;
+      devDocument?: {
+        file_name?: string;
+        document_type?: string;
+        mime_type?: string | null;
+        data_url?: string;
+      };
+    };
 
     if (!body.shipmentId || !body.documentId) {
       return NextResponse.json(
@@ -62,51 +72,117 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => {
-                cookieStore.set(name, value, options);
-              });
-            } catch {}
-          },
-        },
+    const isDevelopmentTest = process.env.NODE_ENV === "development" && body.devMode === true;
+
+    let document: {
+      id: string;
+      shipment_id: string;
+      user_id?: string;
+      document_type: string;
+      file_name: string;
+      storage_path: string;
+      mime_type: string | null;
+      file_size?: number | null;
+    };
+
+    let fileDataUrl = "";
+
+    if (isDevelopmentTest) {
+      const devDocument = body.devDocument;
+
+      if (!devDocument?.data_url || !devDocument.file_name || !devDocument.document_type) {
+        return NextResponse.json(
+          { error: "The local test document data is missing. Upload the document again." },
+          { status: 400 }
+        );
       }
-    );
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      if (!devDocument.data_url.startsWith("data:")) {
+        return NextResponse.json(
+          { error: "Invalid local test document data." },
+          { status: 400 }
+        );
+      }
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
-    }
+      document = {
+        id: body.documentId,
+        shipment_id: body.shipmentId,
+        document_type: devDocument.document_type,
+        file_name: devDocument.file_name,
+        storage_path: "",
+        mime_type: devDocument.mime_type || null,
+      };
+      fileDataUrl = devDocument.data_url;
+    } else {
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) => {
+                  cookieStore.set(name, value, options);
+                });
+              } catch {}
+            },
+          },
+        }
+      );
 
-    const { data: document, error: documentError } = await supabase
-      .from("documents")
-      .select("id,shipment_id,user_id,document_type,file_name,storage_path,mime_type,file_size")
-      .eq("id", body.documentId)
-      .eq("shipment_id", body.shipmentId)
-      .eq("user_id", user.id)
-      .maybeSingle();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-    if (documentError || !document) {
-      return NextResponse.json({ error: "Document not found." }, { status: 404 });
+      if (authError || !user) {
+        return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+      }
+
+      const { data, error: documentError } = await supabase
+        .from("documents")
+        .select("id,shipment_id,user_id,document_type,file_name,storage_path,mime_type,file_size")
+        .eq("id", body.documentId)
+        .eq("shipment_id", body.shipmentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (documentError || !data) {
+        return NextResponse.json({ error: "Document not found." }, { status: 404 });
+      }
+
+      document = data;
+
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(document.storage_path, 120);
+
+      if (signedError || !signedData?.signedUrl) {
+        return NextResponse.json(
+          { error: "Unable to access the uploaded document." },
+          { status: 500 }
+        );
+      }
+
+      const fileResponse = await fetch(signedData.signedUrl);
+
+      if (!fileResponse.ok) {
+        return NextResponse.json(
+          { error: "Unable to download the uploaded document for analysis." },
+          { status: 500 }
+        );
+      }
+
+      const buffer = Buffer.from(await fileResponse.arrayBuffer());
+      fileDataUrl = `data:${document.mime_type || "application/octet-stream"};base64,${buffer.toString("base64")}`;
     }
 
     const mimeType = document.mime_type || "application/octet-stream";
-    const supported =
-      mimeType === "application/pdf" ||
-      mimeType.startsWith("image/");
+    const supported = mimeType === "application/pdf" || mimeType.startsWith("image/");
 
     if (!supported) {
       return NextResponse.json(
@@ -114,29 +190,6 @@ export async function POST(request: Request) {
         { status: 415 }
       );
     }
-
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(document.storage_path, 120);
-
-    if (signedError || !signedData?.signedUrl) {
-      return NextResponse.json(
-        { error: "Unable to access the uploaded document." },
-        { status: 500 }
-      );
-    }
-
-    const fileResponse = await fetch(signedData.signedUrl);
-
-    if (!fileResponse.ok) {
-      return NextResponse.json(
-        { error: "Unable to download the uploaded document for analysis." },
-        { status: 500 }
-      );
-    }
-
-    const buffer = Buffer.from(await fileResponse.arrayBuffer());
-    const base64 = buffer.toString("base64");
 
     const inputContent =
       mimeType === "application/pdf"
@@ -148,7 +201,7 @@ export async function POST(request: Request) {
             {
               type: "input_file",
               filename: document.file_name,
-              file_data: `data:application/pdf;base64,${base64}`,
+              file_data: fileDataUrl,
             },
           ]
         : [
@@ -158,7 +211,7 @@ export async function POST(request: Request) {
             },
             {
               type: "input_image",
-              image_url: `data:${mimeType};base64,${base64}`,
+              image_url: fileDataUrl,
               detail: "high",
             },
           ];
