@@ -11,11 +11,21 @@ import ExistingUserDashboard from "@/components/dashboard/existing-user-dashboar
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [hasActivity, setHasActivity] = useState<boolean | null>(null);
+  const [devMode, setDevMode] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     async function checkUserStatus() {
       try {
+        const isLocalDev =
+          process.env.NODE_ENV === "development" &&
+          new URLSearchParams(window.location.search).get("dev") === "1";
+
+        if (isLocalDev) {
+          setDevMode(true);
+          setHasActivity(false);
+          return;
+        }
         const supabase = createClient();
 
         // 1. Get current logged in user (with fallback session check)
@@ -69,6 +79,10 @@ export default function DashboardPage() {
         </div>
       </div>
     );
+  }
+
+  if (devMode) {
+    return <NewUserDashboard />;
   }
 
   return hasActivity ? <ExistingUserDashboard /> : <NewUserDashboard />;
