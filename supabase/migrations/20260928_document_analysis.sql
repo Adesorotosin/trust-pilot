@@ -44,7 +44,7 @@ with check (
   and exists (
     select 1 from public.documents d
     where d.id = document_id
-      and d.shipment_id = shipment_id
+      and d.shipment_id = document_analysis.shipment_id
       and d.user_id = auth.uid()
   )
 );
