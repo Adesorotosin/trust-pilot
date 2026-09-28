@@ -54,11 +54,11 @@ export default function ForgotPasswordPage() {
       );
 
       if (error) {
-        setErrorMessage(
-          "We couldn't send the reset email. Please check the email address and try again."
-        );
-        return;
-      }
+  console.error("Password reset error:", error);
+  setErrorMessage(error.message);
+  setLoading(false);
+  return;
+}
 
       setSuccess(true);
     } catch {

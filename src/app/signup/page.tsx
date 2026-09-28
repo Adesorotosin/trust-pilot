@@ -2,13 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Shield, ArrowUpRight, Loader2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  Moon,
+  ShieldCheck,
+  Sun,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function SignupPage() {
+  const { theme, setTheme } = useTheme();
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -23,24 +35,31 @@ export default function SignupPage() {
     try {
       setLoadingGoogle(true);
       setErrorMsg(null);
+      setSuccessMsg(null);
+
       const supabase = createClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const origin = window.location.origin;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback?next=/dashboard`,
         },
       });
 
       if (error) {
+        console.error("Google signup error:", error);
         setErrorMsg(error.message);
         setLoadingGoogle(false);
       }
-      // Note: We don't turn off loading on success because the browser redirects to Google
     } catch (err: unknown) {
-      console.error("Unexpected error during Google sign up:", err);
-      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      console.error("Unexpected Google signup error:", err);
+
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred.";
+
       setErrorMsg(message);
       setLoadingGoogle(false);
     }
@@ -49,33 +68,52 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.agreeToTerms) {
-      setErrorMsg("You must agree to the Terms of Service and Privacy Policy.");
-      return;
-    }
+    setErrorMsg(null);
+    setSuccessMsg(null);
 
     const cleanEmail = formData.email.trim().toLowerCase();
-    const cleanPassword = formData.password.trim();
     const cleanFullName = formData.fullName.trim();
     const cleanCompanyName = formData.companyName.trim();
 
-    if (cleanPassword.length < 6) {
+    if (!cleanFullName) {
+      setErrorMsg("Please enter your full name.");
+      return;
+    }
+
+    if (!cleanEmail) {
+      setErrorMsg("Please enter your email address.");
+      return;
+    }
+
+    if (!cleanCompanyName) {
+      setErrorMsg("Please enter your company name.");
+      return;
+    }
+
+    // Never trim passwords. Spaces can technically be part of a password.
+    if (formData.password.length < 6) {
       setErrorMsg("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (!formData.agreeToTerms) {
+      setErrorMsg(
+        "You must agree to the Terms of Service and Privacy Policy."
+      );
       return;
     }
 
     try {
       setLoading(true);
-      setErrorMsg(null);
 
       const supabase = createClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const origin = window.location.origin;
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
-        password: cleanPassword,
+        password: formData.password,
         options: {
-          emailRedirectTo: `${origin}/auth/callback`,
+          emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
           data: {
             full_name: cleanFullName,
             company_name: cleanCompanyName,
@@ -84,272 +122,479 @@ export default function SignupPage() {
       });
 
       if (error) {
-        console.error("Supabase Auth Error:", error.status, error.message);
+        console.error(
+          "Supabase signup error:",
+          error.status,
+          error.message
+        );
+
         setErrorMsg(error.message);
         setLoading(false);
-      } else {
-        if (typeof window !== "undefined") {
-          window.location.href = "/dashboard";
-        }
+        return;
       }
+
+      /*
+       * Supabase behaves differently depending on whether
+       * email confirmation is enabled.
+       *
+       * If a session exists, the user can go directly
+       * to the dashboard.
+       *
+       * If there is no session, Supabase is most likely
+       * waiting for email confirmation.
+       */
+      if (data.session) {
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      setSuccessMsg(
+        "Account created. Check your email to confirm your account before signing in."
+      );
+
+      setLoading(false);
     } catch (err: unknown) {
-      console.error("Unexpected error during signup:", err);
-      const message = err instanceof Error ? err.message : "An unexpected error occurred during sign up.";
+      console.error("Unexpected signup error:", err);
+
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred during sign up.";
+
       setErrorMsg(message);
       setLoading(false);
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden">
-      
-      {/* LEFT SIDE: DESKTOP GRAPHIC */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#080D1A] text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
+    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* =========================================================
+            LEFT SIDE
+        ========================================================= */}
+        <section className="relative hidden overflow-hidden bg-zinc-950 lg:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.16),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.08),transparent_35%)]" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-[#10B981] flex items-center justify-center font-bold text-white shadow-lg shadow-[#10B981]/20">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-extrabold tracking-tight text-white">
-              TradePilot
-            </span>
-          </div>
-
-          <div className="mt-12 lg:mt-20 max-w-lg">
-            <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight">
-              Trade smarter. Move with confidence.
-            </h1>
-            <p className="mt-4 text-sm text-slate-400 leading-relaxed">
-              Understand your shipment costs, documents, compliance risks and next actions with AI-powered trade intelligence built for African importers.
-            </p>
-          </div>
-        </div>
-
-        {/* SHIPMENT GRAPHIC DIAGRAM */}
-        <div className="relative z-10 my-12 lg:my-0 py-8">
-          <div className="relative max-w-md mx-auto">
-            <div className="absolute -top-6 left-0 p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-48">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin Port</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">DEPARTED</span>
+          <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
+            {/* Brand */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 font-bold text-black">
+                TC
               </div>
-              <p className="text-xs font-bold text-white mt-1">Ningbo-Zhoushan, CN</p>
+
+              <span className="text-lg font-semibold text-white">
+                Trade Copilot
+              </span>
             </div>
 
-            <div className="absolute top-2 right-4 px-3 py-1 rounded-full bg-slate-900 border border-[#10B981]/50 text-[10px] font-bold text-white flex items-center gap-1.5 z-20 shadow-lg">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-              Guangzhou Corridor active
-            </div>
+            {/* Main message */}
+            <div className="max-w-xl">
+              <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                Trade intelligence
+              </p>
 
-            <div className="mt-16 mb-12 ml-16 p-4 rounded-xl bg-[#0F172A]/95 border border-[#10B981]/30 shadow-2xl relative z-20 w-60">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Transit Analysis</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#10B981]">ACTIVE</span>
-              </div>
-              <p className="text-xs font-bold text-white mt-1 leading-snug">
-                Route optimized (+4 days saved)
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-6xl">
+                Understand your trade before it moves.
+              </h1>
+
+              <p className="mt-6 max-w-lg text-base leading-7 text-zinc-400">
+                Bring your shipment documents, costs, and trade information
+                together so you can make clearer decisions before and during
+                the import process.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-[#0F172A]/90 border border-slate-800 backdrop-blur-md shadow-xl z-20 w-52 ml-20">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destination</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">CLEARANCE READY</span>
+            {/* Simple product visual */}
+            <div className="relative mx-auto w-full max-w-md py-10">
+              <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-2xl backdrop-blur-xl">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                      Trade workspace
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      Shipment overview
+                    </p>
+                  </div>
+
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
+                    <ArrowRight className="h-4 w-4 text-emerald-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">
+                        Documents
+                      </span>
+
+                      <span className="text-xs font-medium text-emerald-400">
+                        Ready for review
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">
+                        Landed cost
+                      </span>
+
+                      <span className="text-xs font-medium text-zinc-300">
+                        Visibility
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">
+                        Trade checks
+                      </span>
+
+                      <span className="text-xs font-medium text-zinc-300">
+                        Review
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs font-bold text-white mt-1">Lagos Apapa, NG</p>
             </div>
 
-            <svg className="absolute inset-0 w-full h-full pointer-events-none -z-0 stroke-slate-700 overflow-visible" xmlns="http://www.w3.org/2000/svg">
-              <path d="M 50 10 Q 150 60 220 70 T 150 160" fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="relative z-10 border-t border-slate-800/80 pt-6">
-          <p className="text-xs text-slate-400">
-            Trusted by 500+ SME importers across Nigeria, Kenya, & Ghana
-          </p>
-        </div>
-      </div>
-
-      {/* RIGHT SIDE: FORM */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md bg-white dark:bg-[#0E1320] p-6 sm:p-8 lg:p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
-          
-          <div className="flex lg:hidden items-center gap-2 mb-2">
-            <div className="h-7 w-7 rounded-lg bg-[#10B981] flex items-center justify-center font-bold text-white shadow-md shadow-[#10B981]/20">
-              <ArrowUpRight className="h-4 w-4" />
-            </div>
-            <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-              TradePilot
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Create your TradePilot account
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-              Start understanding your shipments with AI-powered insights.
+            <p className="text-sm text-zinc-500">
+              Trade Copilot
             </p>
           </div>
+        </section>
 
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium">
-              {errorMsg}
-            </div>
-          )}
+        {/* =========================================================
+            RIGHT SIDE
+        ========================================================= */}
+        <section className="flex min-h-screen flex-col">
+          {/* Top bar */}
+          <div className="flex items-center justify-between p-6 sm:p-8">
+            {/* Mobile brand */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-sm font-bold text-black">
+                TC
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Full Name
-              </label>
-              <input
-                type="text"
-                placeholder="Oluwatosin Adesoro"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
-                required
-              />
+              <span className="font-semibold">Trade Copilot</span>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Work Email
-              </label>
-              <input
-                type="email"
-                placeholder="name@company.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
-                required
-              />
-            </div>
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Company Name
-              </label>
-              <input
-                type="text"
-                placeholder="Mensah Importing Ltd"
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#10B981] transition-all"
-                required
-              />
-            </div>
+          {/* Form area */}
+          <div className="flex flex-1 items-center justify-center px-6 pb-12 sm:px-8">
+            <div className="w-full max-w-md">
+              {/* Heading */}
+              <div className="mb-8">
+                <p className="mb-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  Get started
+                </p>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#10B981] transition-all"
-                  required
-                />
+                <h2 className="text-3xl font-semibold tracking-tight">
+                  Create your Trade Copilot account
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Set up your workspace and start organizing your trade
+                  information.
+                </p>
+              </div>
+
+              {/* Error */}
+              {errorMsg && (
+                <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                  {errorMsg}
+                </div>
+              )}
+
+              {/* Success */}
+              {successMsg && (
+                <div className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                  {successMsg}
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Full name */}
+                <div>
+                  <label
+                    htmlFor="fullName"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Full name
+                  </label>
+
+                  <input
+                    id="fullName"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Oluwatosin Adesoro"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        fullName: e.target.value,
+                      })
+                    }
+                    disabled={loading || loadingGoogle}
+                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    required
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Work email
+                  </label>
+
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@company.com"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        email: e.target.value,
+                      })
+                    }
+                    disabled={loading || loadingGoogle}
+                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    required
+                  />
+                </div>
+
+                {/* Company */}
+                <div>
+                  <label
+                    htmlFor="companyName"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Company name
+                  </label>
+
+                  <input
+                    id="companyName"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="Your company"
+                    value={formData.companyName}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        companyName: e.target.value,
+                      })
+                    }
+                    disabled={loading || loadingGoogle}
+                    className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    required
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Password
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="At least 6 characters"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          password: e.target.value,
+                        })
+                      }
+                      disabled={loading || loadingGoogle}
+                      className="h-12 w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Terms */}
+                <div className="flex items-start gap-3 pt-1">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={formData.agreeToTerms}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        agreeToTerms: e.target.checked,
+                      })
+                    }
+                    disabled={loading || loadingGoogle}
+                    className="mt-0.5 h-4 w-4 rounded border-border accent-emerald-500"
+                    required
+                  />
+
+                  <label
+                    htmlFor="terms"
+                    className="text-xs leading-5 text-muted-foreground"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      href="/terms"
+                      className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                    >
+                      Privacy Policy
+                    </Link>
+                    .
+                  </label>
+                </div>
+
+                {/* Submit */}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  type="submit"
+                  disabled={loading || loadingGoogle}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-semibold text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    <>
+                      Create account
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
+              </form>
+
+              {/* Divider */}
+              <div className="my-7 flex items-center gap-4">
+                <div className="h-px flex-1 bg-border" />
+
+                <span className="text-xs text-muted-foreground">
+                  OR
+                </span>
+
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              {/* Google */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading || loadingGoogle}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-background text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingGoogle ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M21.35 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.22a4.46 4.46 0 0 1-1.94 2.93v2.44h3.14c1.84-1.69 2.93-4.18 2.93-7.4Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 21.5c2.63 0 4.84-.87 6.45-2.36l-3.14-2.44c-.87.58-1.98.93-3.31.93-2.54 0-4.69-1.72-5.46-4.03H3.3v2.52A9.74 9.74 0 0 0 12 21.5Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M6.54 13.6A5.85 5.85 0 0 1 6.23 12c0-.56.11-1.1.31-1.6V7.88H3.3A9.74 9.74 0 0 0 2.25 12c0 1.57.38 3.05 1.05 4.12l3.24-2.52Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 6.37c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.42 14.63 2.5 12 2.5a9.74 9.74 0 0 0-8.7 5.38l3.24 2.52C7.31 8.09 9.46 6.37 12 6.37Z"
+                    />
+                  </svg>
+                )}
+
+                {loadingGoogle
+                  ? "Connecting..."
+                  : "Continue with Google"}
+              </button>
+
+              {/* Login */}
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-medium text-foreground underline underline-offset-4 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
+                  Log in
+                </Link>
+              </p>
+
+              {/* Security note */}
+              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="h-4 w-4" />
+                <span>Your account is protected by Supabase Auth.</span>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={formData.agreeToTerms}
-                onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-[#10B981] focus:ring-[#10B981]"
-                required
-              />
-              <label htmlFor="terms" className="text-xs text-slate-500 dark:text-slate-400">
-                I agree to the{" "}
-                <Link href="/terms" className="text-[#10B981] hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="text-[#10B981] hover:underline">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-[#10B981] hover:bg-[#0D9668] text-white font-semibold text-xs shadow-md shadow-[#10B981]/20 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
-            </button>
-          </form>
-
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 dark:border-slate-800 w-full"></div>
-            <span className="bg-white dark:bg-[#0E1320] px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider relative z-10">
-              OR
-            </span>
           </div>
-
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loadingGoogle}
-            className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-          >
-            {loadingGoogle ? (
-              <Loader2 className="h-4 w-4 animate-spin text-[#10B981]" />
-            ) : (
-              <svg className="h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.1 0-5.74-2.09-6.68-4.91H1.36v3.15C3.33 21.32 7.37 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.32 14.29c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.56H1.36C.49 8.29 0 10.09 0 12s.49 3.71 1.36 5.44l3.96-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.33 2.68 1.36 6.56l3.96 3.15c.94-2.82 3.58-4.96 6.68-4.96z"
-                />
-              </svg>
-            )}
-            {loadingGoogle ? "Connecting..." : "Continue with Google"}
-          </button>
-
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            Already have an account?{" "}
-            <Link href="/login" className="text-[#10B981] hover:underline font-bold">
-              Log in
-            </Link>
-          </p>
-
-          <div className="pt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-            <Shield className="h-3.5 w-3.5 text-slate-400" />
-            Bank-grade data encryption and compliance auditing standards
-          </div>
-
-        </div>
+        </section>
       </div>
-
-    </div>
+    </main>
   );
 }
