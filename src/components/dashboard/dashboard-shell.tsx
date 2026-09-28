@@ -85,6 +85,7 @@ function getDisplayStatus(status?: string | null) {
 }
 
 export default function DashboardShell({ showEmptyState = false }: { showEmptyState?: boolean }) {
+  const isLocalDev = process.env.NODE_ENV === "development";
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -97,6 +98,14 @@ export default function DashboardShell({ showEmptyState = false }: { showEmptySt
   const [error, setError] = useState("");
 
   const loadDashboard = async () => {
+    if (isLocalDev && window.location.search.includes("dev=1")) {
+      setUserName("Test User");
+      setUserEmail("dev@local.test");
+      setShipments([]);
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const {
       data: { user },
