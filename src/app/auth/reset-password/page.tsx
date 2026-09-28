@@ -35,30 +35,47 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     setMounted(true);
 
-    const checkRecoverySession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    let resolved = false;
 
-      if (!session) {
+    const resolveRecovery = (valid: boolean) => {
+      if (resolved) return;
+      resolved = true;
+      setCheckingSession(false);
+
+      if (!valid) {
         setErrorMessage(
           "This password reset link is invalid or has expired. Please request a new one."
         );
+      } else {
+        setErrorMessage("");
       }
-
-      setCheckingSession(false);
     };
 
-    checkRecoverySession();
-
+    // Supabase processes password-recovery redirects asynchronously.
+    // Listen for PASSWORD_RECOVERY first, then fall back to the existing session.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" && session) {
-        setErrorMessage("");
-        setCheckingSession(false);
+        resolveRecovery(true);
       }
     });
+
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        resolveRecovery(true);
+        return;
+      }
+
+      // Give the client a moment to finish processing the recovery URL.
+      window.setTimeout(() => resolveRecovery(false), 1500);
+    };
+
+    checkSession();
 
     return () => {
       subscription.unsubscribe();
