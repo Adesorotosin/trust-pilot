@@ -326,7 +326,7 @@ export default function ShipmentDetailsPage() {
             onChanged={loadDocuments}
           />
 
-          <TradeAnalysisCard shipment={shipment} />
+          <TradeAnalysisCard shipment={shipment} documents={documents} />
         </section>
       </main>
 
@@ -649,7 +649,13 @@ function UploadDocumentModal({
   );
 }
 
-function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
+function TradeAnalysisCard({
+  shipment,
+  documents,
+}: {
+  shipment: Shipment;
+  documents: DocumentRecord[];
+}) {
   const [dutyRate, setDutyRate] = useState("");
   const [taxRate, setTaxRate] = useState("");
   const [freight, setFreight] = useState("");
@@ -813,6 +819,66 @@ function TradeAnalysisCard({ shipment }: { shipment: Shipment }) {
         </div>
       )}
 
+      <div className="mt-6 rounded-2xl border border-emerald-500/10 bg-white/60 p-4 dark:bg-white/[0.03]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              Document readiness
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {documents.length
+                ? `${documents.length} document${documents.length === 1 ? "" : "s"} connected`
+                : "No shipment documents connected"}
+            </p>
+          </div>
+          <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {documents.length === 0 ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-500 dark:bg-white/5 dark:text-slate-400">
+              Upload an invoice or packing list to prepare for document analysis.
+            </span>
+          ) : (
+            documents.map((document) => (
+              <span
+                key={document.id}
+                className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400"
+              >
+                {document.document_type}
+              </span>
+            ))
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+          <DocumentSourceRow
+            label="Declared value"
+            source="Shipment record"
+            ready={declaredValue > 0}
+          />
+          <DocumentSourceRow
+            label="HS code"
+            source="Shipment record"
+            ready={Boolean(shipment.hs_code)}
+          />
+          <DocumentSourceRow
+            label="Commercial invoice"
+            source="Uploaded document"
+            ready={documents.some((document) => document.document_type === "Commercial Invoice")}
+          />
+          <DocumentSourceRow
+            label="Packing list"
+            source="Uploaded document"
+            ready={documents.some((document) => document.document_type === "Packing List")}
+          />
+        </div>
+
+        <p className="mt-4 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+          Uploaded files are currently connected to this shipment, but their contents are not automatically extracted yet. The next AI step will read supported documents and let you review extracted values before they affect the estimate.
+        </p>
+      </div>
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <AnalysisInput label="Duty rate (%)" value={dutyRate} onChange={setDutyRate} placeholder="e.g. 10" disabled={loading || saving} />
         <AnalysisInput label="Import tax / VAT (%)" value={taxRate} onChange={setTaxRate} placeholder="e.g. 7.5" disabled={loading || saving} />
@@ -893,6 +959,34 @@ function AnalysisInput({
         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#101c17] dark:text-white"
       />
     </label>
+  );
+}
+
+function DocumentSourceRow({
+  label,
+  source,
+  ready,
+}: {
+  label: string;
+  source: string;
+  ready: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-white/[0.03]">
+      <div className="min-w-0">
+        <p className="font-medium">{label}</p>
+        <p className="mt-0.5 text-[10px] text-slate-400">{source}</p>
+      </div>
+      <span
+        className={
+          ready
+            ? "shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+            : "shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-400"
+        }
+      >
+        {ready ? "Available" : "Missing"}
+      </span>
+    </div>
   );
 }
 
